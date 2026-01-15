@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const astrologerSchema = new mongoose.Schema(
   {
     id: { type: Number, required: true, unique: true },
