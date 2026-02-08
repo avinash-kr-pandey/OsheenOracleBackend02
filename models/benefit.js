@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const benefitSchema = new mongoose.Schema(
   {
     icon: { type: String, required: true },
