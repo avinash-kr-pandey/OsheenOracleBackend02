@@ -5,6 +5,7 @@ import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
 import connectDB from "./db/config.js";
+import path from "path";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -21,6 +22,7 @@ import testimonialRoutes from "./routes/testimonialRoutes.js";
 import astrologerRoutes from "./routes/astrologerRoutes.js";
 import readingPackageRoutes from "./routes/readingPackageRoutes.js";
 import readingServiceRoutes from "./routes/readingServiceRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -87,6 +89,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Serve uploaded files
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 // ======================
 // SWAGGER DOCS
 // ======================
@@ -136,6 +141,7 @@ app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/astrologers", astrologerRoutes);
 app.use("/api/reading-packages", readingPackageRoutes);
 app.use("/api/reading-services", readingServiceRoutes);
+app.use("/api/uploads", uploadRoutes);
 
 // ======================
 // HEALTH CHECK
