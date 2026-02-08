@@ -35,6 +35,6 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // POST /api/uploads  (form field name: 'file')
-router.post("/", upload.single("file"), uploadFile);
+router.post("/file-upload", upload.single("file"), uploadFile);
 
 export default router;
