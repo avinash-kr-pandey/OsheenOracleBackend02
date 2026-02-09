@@ -1,3 +1,5 @@
+import dns from "node:dns/promises";
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 import mongoose from "mongoose";
 
 const connectDB = async () => {
@@ -7,7 +9,6 @@ const connectDB = async () => {
   } catch (error) {
     console.error(error);
     process.exit(1);
-    
   }
 };
 
