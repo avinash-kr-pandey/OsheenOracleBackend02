@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const aboutSchema = new mongoose.Schema(
   {
     heroTitle: String,
@@ -7,7 +8,6 @@ const aboutSchema = new mongoose.Schema(
 
     mission: String,
     vision: String,
-
     stats: [
       {
         label: String,
