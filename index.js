@@ -38,6 +38,7 @@ const allowedOrigins = [
   "https://osheen-oracle-website2-0.vercel.app/", // Vercel production
   "https://osheen-oracle-website-updated.vercel.app", // Previous version if any
   "https://osheen-oracle-website2-0.vercel.app",
+  "https://osheen-oracle-dashboard.vercel.app/login",
 ];
 
 // Dynamic CORS configuration
