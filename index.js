@@ -34,11 +34,11 @@ const app = express();
 // CORS CONFIGURATION
 // ======================
 const allowedOrigins = [
-  "http://localhost:3000", // Local development
-  "https://osheen-oracle-website2-0.vercel.app/", // Vercel production
-  "https://osheen-oracle-website-updated.vercel.app", // Previous version if any
+  "http://localhost:3000",
+  "https://osheen-oracle-website2-0.vercel.app/",
+  "https://osheen-oracle-website-updated.vercel.app",
   "https://osheen-oracle-website2-0.vercel.app",
-  "https://osheen-oracle-dashboard.vercel.app/login",
+  "https://osheen-oracle-dashboard.vercel.app",
 ];
 
 // Dynamic CORS configuration
