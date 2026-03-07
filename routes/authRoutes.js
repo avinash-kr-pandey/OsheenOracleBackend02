@@ -12,6 +12,7 @@
 // const router = express.Router();
 
 // router.post("/register", register);
+
 // router.post("/login", login);
 // router.post("/logout", logout);
 // router.post("/forgot-password", forgotPassword);
@@ -33,6 +34,8 @@ import {
 import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
+
+
 
 /**
  * @swagger
