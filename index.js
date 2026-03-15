@@ -24,6 +24,9 @@ import readingPackageRoutes from "./routes/readingPackageRoutes.js";
 import readingServiceRoutes from "./routes/readingServiceRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import aboutRoutes from "./routes/aboutRoutes.js";
+import manifestationRoutes from "./routes/manifestationRoutes.js";
+import spellTypeRoutes from "./routes/spellTypeRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -72,7 +75,7 @@ const corsOptions = {
 };
 
 // Apply CORS middleware
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 // ======================
 // REQUEST LOGGING (for debugging)
@@ -146,6 +149,9 @@ app.use("/api/reading-packages", readingPackageRoutes);
 app.use("/api/reading-services", readingServiceRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/about", aboutRoutes);
+app.use("/api/manifestation-steps", manifestationRoutes);
+app.use("/api/spell-types", spellTypeRoutes);
+app.use("/api/blogs", blogRoutes);
 
 // ======================
 // HEALTH CHECK
@@ -211,7 +217,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`
+  console.log(`   
 🚀 Server running on port ${PORT}
 🔧 Environment: ${process.env.NODE_ENV || "development"}
 🌐 Allowed Origins: ${allowedOrigins.join(", ")}

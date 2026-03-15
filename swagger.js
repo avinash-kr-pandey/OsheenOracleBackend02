@@ -25,6 +25,18 @@ const options = {
         name: "Astrologers",
         description: "Astrologer API Endpoints",
       },
+      {
+        name: "ManifestationSteps",
+        description: "Manifestation step management APIs",
+      },
+      {
+        name: "SpellTypes",
+        description: "Spell type management APIs",
+      },
+      {
+        name: "Blogs",
+        description: "Blog management APIs",
+      },
     ],
     components: {
       securitySchemes: {
@@ -181,6 +193,48 @@ const options = {
             responseTime: { type: "string" },
             availability: { type: "string" },
             skills: { type: "array", items: { type: "string" } },
+            createdAt: { type: "string" },
+            updatedAt: { type: "string" },
+          },
+        },
+        ManifestationStep: {
+          type: "object",
+          required: ["title", "description"],
+          properties: {
+            _id: { type: "string" },
+            title: { type: "string" },
+            description: { type: "string" },
+            createdAt: { type: "string" },
+            updatedAt: { type: "string" },
+          },
+        },
+        SpellType: {
+          type: "object",
+          required: ["type", "description", "idealFor", "icon"],
+          properties: {
+            _id: { type: "string" },
+            type: { type: "string" },
+            description: { type: "string" },
+            idealFor: { type: "string" },
+            icon: { type: "string" },
+            createdAt: { type: "string" },
+            updatedAt: { type: "string" },
+          },
+        },
+        Blog: {
+          type: "object",
+          required: ["title", "description", "image", "category", "author", "authorInitials"],
+          properties: {
+            _id: { type: "string" },
+            title: { type: "string" },
+            description: { type: "string" },
+            image: { type: "string" },
+            category: { type: "string" },
+            author: { type: "string" },
+            authorInitials: { type: "string" },
+            date: { type: "string" },
+            comments: { type: "number" },
+            views: { type: "number" },
             createdAt: { type: "string" },
             updatedAt: { type: "string" },
           },
