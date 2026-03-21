@@ -1,5 +1,8 @@
-
 // Routes
+import express from "express";
+import cors from "cors"; // Add this import
+import swaggerUi from "swagger-ui-express"; // Add this import
+import swaggerJsdoc from "swagger-jsdoc"; // Add this import
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
@@ -19,6 +22,10 @@ import aboutRoutes from "./routes/aboutRoutes.js";
 import manifestationRoutes from "./routes/manifestationRoutes.js";
 import spellTypeRoutes from "./routes/spellTypeRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import dotenv from "dotenv";
+import connectDB from "./db/config.js";
+import cookieParser from "cookie-parser";
+import path from "path";
 
 dotenv.config();
 connectDB();
@@ -26,15 +33,44 @@ connectDB();
 const app = express();
 
 // ======================
+// SWAGGER CONFIGURATION (ADD THIS)
+// ======================
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Osheen Oracle API",
+      version: "1.0.0",
+      description: "API documentation for Osheen Oracle Backend",
+      contact: {
+        name: "API Support",
+      },
+    },
+    servers: [
+      {
+        url: `http://localhost:${process.env.PORT || 5000}`,
+        description: "Development server",
+      },
+    ],
+  },
+  apis: ["./routes/*.js"], // Path to your API route files
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// ======================
 // CORS CONFIGURATION
 // ======================
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://osheen-oracle-website2-0.vercel.app/",
+  "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-website-updated.vercel.app",
   "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-dashboard.vercel.app",
 ];
+
+// Remove the trailing slash from the URL (fixed)
+const cleanedAllowedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
 
 // Dynamic CORS configuration
 const corsOptions = {
@@ -45,7 +81,7 @@ const corsOptions = {
     }
 
     // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (cleanedAllowedOrigins.indexOf(origin) !== -1) {
       console.log(`✅ CORS allowed for origin: ${origin}`);
       callback(null, true);
     } else {
@@ -66,8 +102,8 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-// Apply CORS middleware
-// app.use(cors(corsOptions));
+// Apply CORS middleware (UNCOMMENT THIS)
+app.use(cors(corsOptions));
 
 // ======================
 // REQUEST LOGGING (for debugging)
@@ -91,36 +127,10 @@ app.use(cookieParser());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ======================
-// SWAGGER DOCS
+// SWAGGER DOCS (UPDATED)
 // ======================
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
-
-// ======================
-// HANDLE PRE-FLIGHT REQUESTS FIRST
-// ======================
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    const origin = req.headers.origin;
-
-    if (allowedOrigins.includes(origin)) {
-      res.header("Access-Control-Allow-Origin", origin);
-    }
-
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-    );
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Cookie, X-Requested-With, Accept"
-    );
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Max-Age", "86400"); // 24 hours
-    return res.status(200).end();
-  }
-  next();
-});
 
 // ======================
 // API ROUTES
@@ -153,7 +163,7 @@ app.get("/", (req, res) => {
     success: true,
     message: "API is running...",
     environment: process.env.NODE_ENV,
-    allowedOrigins: allowedOrigins,
+    allowedOrigins: cleanedAllowedOrigins,
     timestamp: new Date().toISOString(),
   });
 });
@@ -191,7 +201,7 @@ app.use((err, req, res, next) => {
     return res.status(403).json({
       success: false,
       message: "CORS Error: Origin not allowed",
-      allowedOrigins: allowedOrigins,
+      allowedOrigins: cleanedAllowedOrigins,
       yourOrigin: req.headers.origin,
     });
   }
@@ -212,7 +222,7 @@ app.listen(PORT, () => {
   console.log(`   
 🚀 Server running on port ${PORT}
 🔧 Environment: ${process.env.NODE_ENV || "development"}
-🌐 Allowed Origins: ${allowedOrigins.join(", ")}
+🌐 Allowed Origins: ${cleanedAllowedOrigins.join(", ")}
 📊 API Docs: http://localhost:${PORT}/api-docs
 🩺 Health Check: http://localhost:${PORT}/
   `);
