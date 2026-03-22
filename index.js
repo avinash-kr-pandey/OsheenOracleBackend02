@@ -1,8 +1,8 @@
 // Routes
 import express from "express";
-import cors from "cors"; // Add this import
-import swaggerUi from "swagger-ui-express"; // Add this import
-import swaggerJsdoc from "swagger-jsdoc"; // Add this import
+import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
@@ -22,10 +22,16 @@ import aboutRoutes from "./routes/aboutRoutes.js";
 import manifestationRoutes from "./routes/manifestationRoutes.js";
 import spellTypeRoutes from "./routes/spellTypeRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import homeRoutes from "./routes/homeRoutes.js"; // Only ONE import
 import dotenv from "dotenv";
 import connectDB from "./db/config.js";
 import cookieParser from "cookie-parser";
 import path from "path";
+import { fileURLToPath } from "url";
+
+// Get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 connectDB();
@@ -33,7 +39,7 @@ connectDB();
 const app = express();
 
 // ======================
-// SWAGGER CONFIGURATION (ADD THIS)
+// SWAGGER CONFIGURATION
 // ======================
 const swaggerOptions = {
   definition: {
@@ -53,7 +59,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ["./routes/*.js"], // Path to your API route files
+  apis: ["./routes/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -65,22 +71,16 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-website-updated.vercel.app",
-  "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-dashboard.vercel.app",
 ];
 
-// Remove the trailing slash from the URL (fixed)
 const cleanedAllowedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
 
-// Dynamic CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, postman)
     if (!origin) {
       return callback(null, true);
     }
-
-    // Check if origin is in allowed list
     if (cleanedAllowedOrigins.indexOf(origin) !== -1) {
       console.log(`✅ CORS allowed for origin: ${origin}`);
       callback(null, true);
@@ -102,11 +102,10 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-// Apply CORS middleware (UNCOMMENT THIS)
 app.use(cors(corsOptions));
 
 // ======================
-// REQUEST LOGGING (for debugging)
+// REQUEST LOGGING
 // ======================
 app.use((req, res, next) => {
   console.log(`\n=== ${new Date().toISOString()} ===`);
@@ -124,10 +123,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Serve uploaded files
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // ======================
-// SWAGGER DOCS (UPDATED)
+// SWAGGER DOCS
 // ======================
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
@@ -154,6 +154,7 @@ app.use("/api/about", aboutRoutes);
 app.use("/api/manifestation-steps", manifestationRoutes);
 app.use("/api/spell-types", spellTypeRoutes);
 app.use("/api/blogs", blogRoutes);
+app.use("/api", homeRoutes); // Home routes mounted here
 
 // ======================
 // HEALTH CHECK
@@ -165,6 +166,11 @@ app.get("/", (req, res) => {
     environment: process.env.NODE_ENV,
     allowedOrigins: cleanedAllowedOrigins,
     timestamp: new Date().toISOString(),
+    endpoints: {
+      home: "/api/home",
+      adminHome: "/api/admin/home",
+      docs: "/api-docs"
+    }
   });
 });
 
@@ -196,7 +202,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("❌ Server Error:", err);
 
-  // Handle CORS errors specifically
   if (err.message && err.message.includes("CORS")) {
     return res.status(403).json({
       success: false,
@@ -225,5 +230,7 @@ app.listen(PORT, () => {
 🌐 Allowed Origins: ${cleanedAllowedOrigins.join(", ")}
 📊 API Docs: http://localhost:${PORT}/api-docs
 🩺 Health Check: http://localhost:${PORT}/
+🏠 Home API: http://localhost:${PORT}/api/home
+🔐 Admin Home API: http://localhost:${PORT}/api/admin/home
   `);
 });
