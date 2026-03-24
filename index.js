@@ -28,6 +28,7 @@ import connectDB from "./db/config.js";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
+import becomeAMemberRoutes from "./routes/becomeamemberRoutes.js";
 
 // Get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +70,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 // ======================
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:3001",
   "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-website-updated.vercel.app",
   "https://osheen-oracle-dashboard.vercel.app",
@@ -155,8 +157,10 @@ app.use("/api/manifestation-steps", manifestationRoutes);
 app.use("/api/spell-types", spellTypeRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api", homeRoutes); // Home routes mounted here
+app.use("/api/becomeamember", becomeAMemberRoutes); // Membership routes mounted here
 
 // ======================
+
 // HEALTH CHECK
 // ======================
 app.get("/", (req, res) => {

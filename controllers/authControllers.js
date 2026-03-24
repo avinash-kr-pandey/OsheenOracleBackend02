@@ -10,7 +10,6 @@ import jwt from "jsonwebtoken";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ---------------- REGISTER ------------------
-
 export const register = async (req, res) => {
   try {
     const schema = Joi.object({
@@ -18,18 +17,33 @@ export const register = async (req, res) => {
       email: Joi.string().email().required(),
       password: Joi.string().min(6).required(),
       type: Joi.string().valid("user", "admin").optional(),
+      adminSecret: Joi.string().optional(),
     });
 
     const { error } = schema.validate(req.body);
     if (error) return res.status(400).json({ message: error.message });
 
-    const { name, email, password, type } = req.body;
+    const { name, email, password, type, adminSecret } = req.body;
 
-    // Prevent assigning admin role during public registration
-    // if (type === "admin") return res.status(403).json({ message: "Cannot assign admin role" });
-
+    // Check if user already exists
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "User already exists" });
+
+    // Determine user type with admin secret validation
+    let userType = "user";
+    let isVerified = false;
+
+    if (type === "admin") {
+      // Check admin secret key
+      if (adminSecret && adminSecret === process.env.ADMIN_SECRET_KEY) {
+        userType = "admin";
+        isVerified = true; // Auto-verify admin users
+      } else {
+        return res.status(403).json({
+          message: "Invalid admin secret key. Admin registration denied.",
+        });
+      }
+    }
 
     const hashed = await bcrypt.hash(password, 10);
 
@@ -37,7 +51,9 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashed,
-      type: type || undefined,
+      type: userType,
+      loginMethod: "email",
+      isVerified: isVerified,
     });
 
     res.json({
@@ -47,6 +63,7 @@ export const register = async (req, res) => {
         name: user.name,
         email: user.email,
         type: user.type,
+        isVerified: user.isVerified,
       },
     });
   } catch (error) {
@@ -55,7 +72,6 @@ export const register = async (req, res) => {
 };
 
 // ---------------- LOGIN ------------------
-
 export const login = async (req, res) => {
   try {
     const schema = Joi.object({
@@ -71,12 +87,30 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found" });
 
+    // Check if user has password (for Google users)
+    if (!user.password && user.loginMethod === "google") {
+      return res.status(400).json({
+        message:
+          "This account was created with Google. Please login with Google.",
+      });
+    }
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Invalid password" });
 
-    const token = generateToken(user._id);
+    // Generate token with user type included
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        type: user.type,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || "7d" },
+    );
 
     res.json({
+      success: true,
       message: "Login successful",
       token,
       user: {
@@ -84,6 +118,8 @@ export const login = async (req, res) => {
         name: user.name,
         email: user.email,
         type: user.type,
+        isVerified: user.isVerified,
+        loginMethod: user.loginMethod,
       },
     });
   } catch (error) {
@@ -91,19 +127,15 @@ export const login = async (req, res) => {
   }
 };
 
-/**
- * @desc    Login or register with Google
- * @route   POST /api/auth/google
- * @access  Public
- */
+// ---------------- GOOGLE LOGIN ------------------
 export const googleLogin = async (req, res) => {
   try {
     const { token } = req.body;
 
     if (!token) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Token missing" 
+      return res.status(400).json({
+        success: false,
+        message: "Token missing",
       });
     }
 
@@ -120,18 +152,44 @@ export const googleLogin = async (req, res) => {
 
     console.log("✅ Google verified:", { email, name });
 
-    // ✅ USE YOUR MODEL'S findOrCreate METHOD
-    let user = await User.findOrCreate({
-      email,
-      name,
-      picture,
-      googleId,
-    });
+    // Find or create user
+    let user = await User.findOne({ email });
 
-    // Generate JWT
-    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRE || "7d",
-    });
+    if (!user) {
+      // Create new user
+      user = new User({
+        name,
+        email,
+        googleId,
+        avatar: picture || "",
+        loginMethod: "google",
+        isVerified: true,
+        type: "user", // Default type for Google users
+      });
+      await user.save();
+      console.log(`✅ New Google user created: ${email}`);
+    } else if (!user.googleId && googleId) {
+      // Update existing user with Google ID
+      user.googleId = googleId;
+      user.loginMethod = "google";
+      user.isVerified = true;
+      if (!user.avatar && picture) {
+        user.avatar = picture;
+      }
+      await user.save();
+      console.log(`✅ Existing user updated with Google ID: ${email}`);
+    }
+
+    // Generate JWT with user type
+    const jwtToken = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        type: user.type,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || "7d" },
+    );
 
     console.log("✅ JWT generated for user:", user._id);
 
@@ -140,7 +198,7 @@ export const googleLogin = async (req, res) => {
       token: jwtToken,
       user: {
         _id: user._id,
-        id: user._id, // ✅ Virtual field
+        id: user._id,
         name: user.name,
         email: user.email,
         type: user.type,
@@ -151,28 +209,29 @@ export const googleLogin = async (req, res) => {
       },
       message: "Google login successful",
     });
-
   } catch (error) {
     console.error("❌ Google auth error:", {
       message: error.message,
       stack: error.stack,
     });
-    
+
     res.status(500).json({
       success: false,
       message: "Server error during Google authentication",
-      error: error.message
+      error: error.message,
     });
   }
 };
-// ---------------- LOGOUT ------------------
 
+// ---------------- LOGOUT ------------------
 export const logout = async (req, res) => {
-  res.json({ message: "Logged out successfully" });
+  res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
 };
 
 // ---------------- FORGOT PASSWORD ------------------
-
 export const forgotPassword = async (req, res) => {
   try {
     const schema = Joi.object({
@@ -187,25 +246,42 @@ export const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "Email not found" });
 
+    // Skip if Google user
+    if (user.loginMethod === "google") {
+      return res.status(400).json({
+        message: "Google accounts use Google login. Please login with Google.",
+      });
+    }
+
     const resetToken = crypto.randomBytes(32).toString("hex");
 
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
 
     await user.save();
 
-    const resetUrl = `http://localhost:5000/api/auth/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
-    await sendEmail(email, "Reset Password", `Reset using: ${resetUrl}`);
+    await sendEmail(
+      email,
+      "Reset Password",
+      `
+      You requested a password reset.
+      Click this link to reset your password: ${resetUrl}
+      This link expires in 15 minutes.
+    `,
+    );
 
-    res.json({ message: "Password reset link sent to email" });
+    res.json({
+      success: true,
+      message: "Password reset link sent to email",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 // ---------------- RESET PASSWORD ------------------
-
 export const resetPassword = async (req, res) => {
   try {
     const token = req.params.token;
@@ -215,8 +291,11 @@ export const resetPassword = async (req, res) => {
       resetPasswordExpire: { $gt: Date.now() },
     });
 
-    if (!user)
-      return res.status(400).json({ message: "Invalid or expired token" });
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired token",
+      });
+    }
 
     const schema = Joi.object({
       password: Joi.string().min(6).required(),
@@ -231,15 +310,69 @@ export const resetPassword = async (req, res) => {
 
     await user.save();
 
-    res.json({ message: "Password reset successful" });
+    res.json({
+      success: true,
+      message: "Password reset successful",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// --------- PROTECTED SAMPLE ROUTE ---------
-
+// ---------------- PROFILE ------------------
 export const profile = async (req, res) => {
-  const user = await User.findById(req.user.id).select("-password");
-  res.json(user);
+  try {
+    const user = await User.findById(req.user.id).select(
+      "-password -resetPasswordToken -resetPasswordExpire",
+    );
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        type: user.type,
+        avatar: user.avatar,
+        loginMethod: user.loginMethod,
+        isVerified: user.isVerified,
+        addresses: user.addresses,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ---------------- CREATE FIRST ADMIN (Helper Function) ------------------
+export const createFirstAdmin = async () => {
+  try {
+    const adminExists = await User.findOne({ email: "admin@osheenoracle.com" });
+
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash("Admin@123456", 10);
+      const admin = await User.create({
+        name: "Admin User",
+        email: "admin@osheenoracle.com",
+        password: hashedPassword,
+        type: "admin",
+        loginMethod: "email",
+        isVerified: true,
+      });
+      console.log("✅ Admin user created successfully!");
+      console.log("📧 Email: admin@osheenoracle.com");
+      console.log("🔑 Password: Admin@123456");
+      return admin;
+    } else if (adminExists.type !== "admin") {
+      adminExists.type = "admin";
+      adminExists.isVerified = true;
+      await adminExists.save();
+      console.log("✅ Existing user upgraded to admin");
+      return adminExists;
+    }
+
+    console.log("ℹ️ Admin user already exists");
+    return adminExists;
+  } catch (error) {
+    console.error("❌ Error creating admin:", error.message);
+  }
 };

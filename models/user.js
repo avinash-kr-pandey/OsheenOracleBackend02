@@ -8,80 +8,80 @@ const addressSchema = new mongoose.Schema(
     phone: { type: String, required: true },
     isDefault: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const userSchema = new mongoose.Schema(
   {
-    name: { 
-      type: String, 
-      required: true 
+    name: {
+      type: String,
+      required: true,
     },
-    email: { 
-      type: String, 
-      required: true, 
+    email: {
+      type: String,
+      required: true,
       unique: true,
       lowercase: true,
-      trim: true 
+      trim: true,
     },
-    password: { 
-      type: String, 
+    password: {
+      type: String,
       // Not required for Google OAuth users
       // Add validation only for email/password users
-      required: function() {
+      required: function () {
         return this.loginMethod === "email";
-      }
+      },
     },
-    type: { 
-      type: String, 
-      enum: ["user", "admin"], 
-      default: "user" 
+    type: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
     },
-    
+
     // Google OAuth fields
     googleId: {
       type: String,
       default: null,
-      sparse: true // Allows null values while maintaining uniqueness
+      sparse: true, // Allows null values while maintaining uniqueness
     },
     loginMethod: {
       type: String,
       enum: ["email", "google"],
-      default: "email"
+      default: "email",
     },
     isVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     avatar: {
       type: String,
-      default: ""
+      default: "",
     },
     phone: {
       type: String,
-      default: ""
+      default: "",
     },
-    
+
     // Password reset fields
     resetPasswordToken: String,
     resetPasswordExpire: Date,
-    
+
     // Addresses
     addresses: [addressSchema],
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Index for Google OAuth
 userSchema.index({ googleId: 1 }, { sparse: true });
 
 // Static method to find or create user for Google OAuth
-userSchema.statics.findOrCreate = async function(googleUser) {
+userSchema.statics.findOrCreate = async function (googleUser) {
   try {
     let user = await this.findOne({ email: googleUser.email });
-    
+
     if (!user) {
       // Create new user
       user = new this({
@@ -93,7 +93,7 @@ userSchema.statics.findOrCreate = async function(googleUser) {
         isVerified: true,
         password: null, // No password for Google users
       });
-      
+
       await user.save();
       console.log(`✅ New Google user created: ${googleUser.email}`);
     } else if (!user.googleId && googleUser.googleId) {
@@ -101,16 +101,18 @@ userSchema.statics.findOrCreate = async function(googleUser) {
       user.googleId = googleUser.googleId;
       user.loginMethod = "google";
       user.isVerified = true;
-      
+
       // Update avatar if not set
       if (!user.avatar && googleUser.picture) {
         user.avatar = googleUser.picture;
       }
-      
+
       await user.save();
-      console.log(`✅ Existing user updated with Google ID: ${googleUser.email}`);
+      console.log(
+        `✅ Existing user updated with Google ID: ${googleUser.email}`,
+      );
     }
-    
+
     return user;
   } catch (error) {
     console.error("Error in findOrCreate:", error);
@@ -119,7 +121,7 @@ userSchema.statics.findOrCreate = async function(googleUser) {
 };
 
 // Method to convert user to JSON (remove sensitive data)
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
   delete user.resetPasswordToken;
@@ -129,7 +131,7 @@ userSchema.methods.toJSON = function() {
 };
 
 // Virtual for frontend ID
-userSchema.virtual("id").get(function() {
+userSchema.virtual("id").get(function () {
   return this._id.toString();
 });
 
@@ -137,4 +139,7 @@ userSchema.virtual("id").get(function() {
 userSchema.set("toJSON", { virtuals: true });
 userSchema.set("toObject", { virtuals: true });
 
-export default mongoose.model("User", userSchema);
+// ✅ FIX: Check if model already exists before creating
+const User = mongoose.models.User || mongoose.model("User", userSchema);
+
+export default User;
