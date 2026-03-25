@@ -17,7 +17,27 @@ export const createMembershipApplication = async (req, res) => {
   try {
     const { name, email, phone, countryCode, plan, newsletter } = req.body;
 
-    // Check if email already exists
+    // 🔍 Validate plan exists
+    // const existingPlan = await MembershipPlan.findOne({
+    //   id: plan,
+    //   isActive: true,
+    // });
+    const existingPlan = await MembershipPlan.findById(plan);
+    // ya agar custom id field se match karna hai to:
+    // const existingPlan = await MembershipPlan.findOne({
+    //   _id: plan, // MongoDB _id se match karo
+    //   isActive: true,
+    // });
+
+    if (!existingPlan) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid plan selected. Please choose a valid membership plan.",
+      });
+    }
+
+    // 📧 Check duplicate email
     const existingMember = await BecomeAMember.findOne({
       email: email.toLowerCase(),
       status: { $in: ["pending", "active", "contacted"] },
@@ -31,7 +51,7 @@ export const createMembershipApplication = async (req, res) => {
       });
     }
 
-    // Create new membership application
+    // ✅ Create application
     const application = new BecomeAMember({
       name,
       email: email.toLowerCase(),
@@ -70,7 +90,6 @@ export const createMembershipApplication = async (req, res) => {
     });
   }
 };
-
 // @desc    Get all membership applications (Admin)
 // @route   GET /api/membership/admin/applications
 // @access  Private/Admin
@@ -362,14 +381,21 @@ export const getAllContent = async (req, res) => {
   try {
     console.log("🚀 Fetching all dynamic content...");
 
+    // const [plans, benefits, testimonials, addOns, stats] = await Promise.all([
+    //   MembershipPlan.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+    //   Benefit.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+    //   Testimonial.find({ isActive: true })
+    //     .sort({ order: 1, createdAt: -1 })
+    //     .limit(6),
+    //   AddOn.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+    //   Stat.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+    // ]);
     const [plans, benefits, testimonials, addOns, stats] = await Promise.all([
-      MembershipPlan.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-      Benefit.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-      Testimonial.find({ isActive: true })
-        .sort({ order: 1, createdAt: -1 })
-        .limit(6),
-      AddOn.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-      Stat.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+      MembershipPlan.find({}).sort({ order: 1, createdAt: -1 }),
+      Benefit.find({}).sort({ order: 1, createdAt: -1 }),
+      Testimonial.find({}).sort({ order: 1, createdAt: -1 }).limit(6),
+      AddOn.find({}).sort({ order: 1, createdAt: -1 }),
+      Stat.find({}).sort({ order: 1, createdAt: -1 }),
     ]);
 
     console.log("✅ Data fetched:", {
@@ -405,6 +431,78 @@ export const getAllContent = async (req, res) => {
     });
   }
 };
+
+// export const createMembershipApplication = async (req, res) => {
+//   try {
+//     const { name, email, phone, countryCode, plan, newsletter } = req.body;
+
+//     // 🔍 Validate plan exists
+//     const existingPlan = await MembershipPlan.findOne({
+//       id: plan,
+//       isActive: true,
+//     });
+
+//     if (!existingPlan) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Invalid plan selected. Please choose a valid membership plan.",
+//       });
+//     }
+
+//     // 📧 Check duplicate email
+//     const existingMember = await BecomeAMember.findOne({
+//       email: email.toLowerCase(),
+//       status: { $in: ["pending", "active", "contacted"] },
+//     });
+
+//     if (existingMember) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "An application with this email already exists. Our team will contact you soon.",
+//       });
+//     }
+
+//     // ✅ Create application
+//     const application = new BecomeAMember({
+//       name,
+//       email: email.toLowerCase(),
+//       phone,
+//       countryCode,
+//       plan,
+//       newsletter: newsletter || true,
+//     });
+
+//     await application.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message:
+//         "Membership application submitted successfully! Our team will contact you shortly.",
+//       data: {
+//         id: application._id,
+//         name: application.name,
+//         email: application.email,
+//         plan: application.plan,
+//         status: application.status,
+//       },
+//     });
+//   } catch (error) {
+//     if (error.name === "ValidationError") {
+//       const messages = Object.values(error.errors).map((err) => err.message);
+//       return res.status(400).json({
+//         success: false,
+//         message: "Validation error",
+//         errors: messages,
+//       });
+//     }
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
 
 // ==================== MEMBERSHIP PLANS CRUD (Admin) ====================
 

@@ -35,12 +35,8 @@ const becomeAMemberSchema = new mongoose.Schema({
   plan: {
     type: String,
     required: [true, "Plan selection is required"],
-    enum: [
-      "basic-aura",
-      "tarot-insight",
-      "healing-energy",
-      "premium-manifestation",
-    ],
+    // ✅ REMOVED enum validation - now accepts any plan ID (MongoDB _id)
+    // No enum array here
   },
   newsletter: {
     type: Boolean,
@@ -86,7 +82,7 @@ const becomeAMemberSchema = new mongoose.Schema({
   },
 });
 
-// Dynamic Content Schemas
+// Dynamic Content Schemas (No changes needed here)
 const membershipPlanSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
@@ -152,11 +148,13 @@ const statSchema = new mongoose.Schema(
 );
 
 // Update timestamp on save
-becomeAMemberSchema.pre("save", function (next) {
+// becomeAMemberSchema.pre("save", function (next) {
+//   this.updatedAt = Date.now();
+//   next();
+// });
+becomeAMemberSchema.pre("save", function () {
   this.updatedAt = Date.now();
-  next();
 });
-
 // Virtual for full phone number
 becomeAMemberSchema.virtual("fullPhoneNumber").get(function () {
   return this.phone ? `${this.countryCode} ${this.phone}` : null;

@@ -29,20 +29,24 @@ import {
   updateStat,
   deleteStat,
 } from "../controllers/BecomeAMemberController.js";
-import { admin, protect } from "../middlewares/authMiddleware.js";
-
-
 
 const router = express.Router();
 
 // ==================== PUBLIC ROUTES ====================
-router.post("/apply", createMembershipApplication);
+// TEMPORARY: Direct function call without any wrapper
+router.post("/apply", async (req, res) => {
+  console.log("🔵 ROUTE: /apply hit");
+  try {
+    await createMembershipApplication(req, res);
+  } catch (error) {
+    console.error("🔴 Route error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get("/content", getAllContent);
 
-// ==================== ADMIN ROUTES (Protected) ====================
-// Apply auth middleware to all admin routes
-router.use("/admin", protect, admin);
-
+// ==================== ADMIN ROUTES ====================
 router.get("/admin/applications", getAllApplications);
 router.get("/admin/applications/:id", getApplicationById);
 router.put("/admin/applications/:id/status", updateApplicationStatus);

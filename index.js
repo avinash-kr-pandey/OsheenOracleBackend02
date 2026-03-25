@@ -157,7 +157,7 @@ app.use("/api/manifestation-steps", manifestationRoutes);
 app.use("/api/spell-types", spellTypeRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api", homeRoutes); // Home routes mounted here
-app.use("/api/becomeamember", becomeAMemberRoutes); // Membership routes mounted here
+app.use("/api/becomeamember", becomeAMemberRoutes); 
 
 // ======================
 
