@@ -22,7 +22,7 @@ import aboutRoutes from "./routes/aboutRoutes.js";
 import manifestationRoutes from "./routes/manifestationRoutes.js";
 import spellTypeRoutes from "./routes/spellTypeRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
-import homeRoutes from "./routes/homeRoutes.js"; // Only ONE import
+import homeRoutes from "./routes/homeRoutes.js";
 import dotenv from "dotenv";
 import connectDB from "./db/config.js";
 import cookieParser from "cookie-parser";
@@ -30,14 +30,29 @@ import path from "path";
 import { fileURLToPath } from "url";
 import becomeAMemberRoutes from "./routes/becomeamemberRoutes.js";
 
+// ✅ Load environment variables FIRST
+dotenv.config();
+
 // Get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
-connectDB();
-
 const app = express();
+
+// ======================
+// DATABASE CONNECTION (WITH AWAIT)
+// ======================
+// ✅ Fix: Use IIFE to connect before starting server
+(async () => {
+  try {
+    console.log("🔄 Connecting to MongoDB...");
+    await connectDB();
+    console.log("✅ Database connected successfully");
+  } catch (error) {
+    console.error("❌ Database connection failed:", error.message);
+    process.exit(1);
+  }
+})();
 
 // ======================
 // SWAGGER CONFIGURATION
@@ -156,11 +171,10 @@ app.use("/api/about", aboutRoutes);
 app.use("/api/manifestation-steps", manifestationRoutes);
 app.use("/api/spell-types", spellTypeRoutes);
 app.use("/api/blogs", blogRoutes);
-app.use("/api", homeRoutes); // Home routes mounted here
-app.use("/api/becomeamember", becomeAMemberRoutes); 
+app.use("/api", homeRoutes);
+app.use("/api/becomeamember", becomeAMemberRoutes);
 
 // ======================
-
 // HEALTH CHECK
 // ======================
 app.get("/", (req, res) => {
