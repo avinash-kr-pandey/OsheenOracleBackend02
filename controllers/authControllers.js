@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import User from "../models/user.js";
+import User from "../models/User.js";
 import { generateToken } from "../utils/generateToken.js";
 import { sendEmail } from "../utils/sendEmauils.js";
 import Joi from "joi";

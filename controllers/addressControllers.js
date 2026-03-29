@@ -1,4 +1,4 @@
-import User from "../models/user.js";
+import User from "../models/User.js";
 import Joi from "joi";
 
 // Normalize legacy address payloads (street/city/state/postalCode/country)
