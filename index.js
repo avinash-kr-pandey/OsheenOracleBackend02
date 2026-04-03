@@ -173,7 +173,7 @@ app.use("/api/spell-types", spellTypeRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api", homeRoutes);
 app.use("/api/becomeamember", becomeAMemberRoutes);
-
+app.use("/uploads", require("express").static("/var/www/uploads"));
 // ======================
 // HEALTH CHECK
 // ======================
