@@ -6,35 +6,110 @@ import { uploadFile } from "../controllers/uploadController.js";
 
 const router = express.Router();
 
+// Create directories for different file types
 const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const imagesDir = "/var/www/uploads/images";
+const videosDir = "/var/www/uploads/videos";
 
+// Ensure all directories exist
+[uploadDir, imagesDir, videosDir].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Updated storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
+  destination: (req, file, cb) => {
+    // Choose destination based on file type
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, imagesDir);
+    } else if (file.mimetype.startsWith("video/")) {
+      cb(null, videosDir);
+    } else {
+      cb(null, uploadDir);
+    }
+  },
   filename: (req, file, cb) => {
     const safeName = file.originalname.replace(/\s+/g, "-");
     cb(null, `${Date.now()}-${safeName}`);
   },
 });
 
+// Updated file filter to include videos
 const fileFilter = (req, file, cb) => {
   const allowed = [
+    // Images
     "image/jpeg",
     "image/png",
     "image/gif",
     "image/webp",
     "image/jpg",
+    // Videos
+    "video/mp4",
+    "video/mpeg",
+    "video/quicktime",
+    "video/x-msvideo",
+    "video/webm",
+    // Documents
     "application/pdf",
   ];
-  if (allowed.includes(file.mimetype)) cb(null, true);
-  else cb(new Error("Invalid file type. Only images and PDFs are allowed."));
+
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        `Invalid file type. Only images, videos (MP4, MOV, AVI, WEBM), and PDFs are allowed. Received: ${file.mimetype}`,
+      ),
+    );
+  }
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
+// Increased limit for videos (200MB for videos, 10MB for others)
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB max
+});
 
-// POST /api/uploads  (form field name: 'file')
+// POST /api/uploads/file-upload (form field name: 'file')
 router.post("/file-upload", upload.single("file"), uploadFile);
+
+// Optional: Add multiple file upload
+router.post("/multiple-upload", upload.array("files", 5), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No files uploaded",
+      });
+    }
+
+    const files = req.files.map((file) => ({
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype,
+      type: file.mimetype.startsWith("image/")
+        ? "image"
+        : file.mimetype.startsWith("video/")
+          ? "video"
+          : "document",
+      url: `/uploads/${file.filename}`,
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: `${files.length} files uploaded successfully`,
+      files: files,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 export default router;

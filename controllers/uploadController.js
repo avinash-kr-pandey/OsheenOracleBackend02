@@ -9,15 +9,33 @@ export const uploadFile = (req, res) => {
         .json({ success: false, message: "No file uploaded" });
     }
 
-    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    // Determine file type
+    let fileType = "document";
+    if (req.file.mimetype.startsWith("image/")) {
+      fileType = "image";
+    } else if (req.file.mimetype.startsWith("video/")) {
+      fileType = "video";
+    }
+
+    // Construct URL based on file type
+    let fileUrl;
+    if (req.file.mimetype.startsWith("image/")) {
+      fileUrl = `${req.protocol}://${req.get("host")}/uploads/images/${req.file.filename}`;
+    } else if (req.file.mimetype.startsWith("video/")) {
+      fileUrl = `${req.protocol}://${req.get("host")}/uploads/videos/${req.file.filename}`;
+    } else {
+      fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    }
 
     return res.json({
       success: true,
+      message: "File uploaded successfully",
       file: {
         filename: req.file.filename,
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
+        type: fileType,
         url: fileUrl,
       },
     });
@@ -25,6 +43,6 @@ export const uploadFile = (req, res) => {
     console.error("Upload error:", err);
     return res
       .status(500)
-      .json({ success: false, message: "Upload failed", error: err.stack });
+      .json({ success: false, message: "Upload failed", error: err.message });
   }
 };
