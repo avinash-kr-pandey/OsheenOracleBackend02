@@ -10,18 +10,18 @@ export const uploadFile = (req, res) => {
     }
 
     // Determine file type
-    let fileType = "document";
-    if (req.file.mimetype.startsWith("image/")) {
-      fileType = "image";
-    } else if (req.file.mimetype.startsWith("video/")) {
-      fileType = "video";
+    let fileType = 'document';
+    if (req.file.mimetype.startsWith('image/')) {
+      fileType = 'image';
+    } else if (req.file.mimetype.startsWith('video/')) {
+      fileType = 'video';
     }
 
     // Construct URL based on file type
     let fileUrl;
-    if (req.file.mimetype.startsWith("image/")) {
+    if (req.file.mimetype.startsWith('image/')) {
       fileUrl = `${req.protocol}://${req.get("host")}/uploads/images/${req.file.filename}`;
-    } else if (req.file.mimetype.startsWith("video/")) {
+    } else if (req.file.mimetype.startsWith('video/')) {
       fileUrl = `${req.protocol}://${req.get("host")}/uploads/videos/${req.file.filename}`;
     } else {
       fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;

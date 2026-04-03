@@ -7,12 +7,11 @@ import { uploadFile } from "../controllers/uploadController.js";
 const router = express.Router();
 
 // Create directories for different file types
-const uploadDir = path.join(process.cwd(), "uploads");
 const imagesDir = "/var/www/uploads/images";
 const videosDir = "/var/www/uploads/videos";
 
 // Ensure all directories exist
-[uploadDir, imagesDir, videosDir].forEach((dir) => {
+[imagesDir, videosDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -22,12 +21,12 @@ const videosDir = "/var/www/uploads/videos";
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Choose destination based on file type
-    if (file.mimetype.startsWith("image/")) {
+    if (file.mimetype.startsWith('image/')) {
       cb(null, imagesDir);
-    } else if (file.mimetype.startsWith("video/")) {
+    } else if (file.mimetype.startsWith('video/')) {
       cb(null, videosDir);
     } else {
-      cb(null, uploadDir);
+      cb(null, "/var/www/uploads");
     }
   },
   filename: (req, file, cb) => {
@@ -54,26 +53,22 @@ const fileFilter = (req, file, cb) => {
     // Documents
     "application/pdf",
   ];
-
+  
   if (allowed.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(
-      new Error(
-        `Invalid file type. Only images, videos (MP4, MOV, AVI, WEBM), and PDFs are allowed. Received: ${file.mimetype}`,
-      ),
-    );
+    cb(new Error(`Invalid file type. Only images, videos, and PDFs are allowed.`));
   }
 };
 
-// Increased limit for videos (200MB for videos, 10MB for others)
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB max
+// Increased limit for videos (200MB)
+const upload = multer({ 
+  storage, 
+  fileFilter, 
+  limits: { fileSize: 200 * 1024 * 1024 }
 });
 
-// POST /api/uploads/file-upload (form field name: 'file')
+// POST /api/uploads/file-upload
 router.post("/file-upload", upload.single("file"), uploadFile);
 
 // Optional: Add multiple file upload
