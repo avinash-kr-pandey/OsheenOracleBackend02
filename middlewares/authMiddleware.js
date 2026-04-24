@@ -57,14 +57,17 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // 5. Attach user to request object
+    // 5. Attach user to request object (complete user object)
     req.user = {
       id: user._id,
+      _id: user._id, // Added for consistency
       email: user.email,
       name: user.name,
       type: user.type, // 'user' or 'admin'
       loginMethod: user.loginMethod,
       isVerified: user.isVerified,
+      phone: user.phone,
+      avatar: user.avatar,
     };
 
     next();
@@ -89,7 +92,7 @@ export const admin = (req, res, next) => {
   }
 };
 
-// Optional: Role-based middleware
+// Role-based middleware
 export const authorize = (...types) => {
   return (req, res, next) => {
     if (!types.includes(req.user.type)) {
@@ -102,7 +105,7 @@ export const authorize = (...types) => {
   };
 };
 
-// Optional: Optional auth (for routes that work with/without auth)
+// Optional auth (for routes that work with/without auth)
 export const optionalAuth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -115,10 +118,12 @@ export const optionalAuth = async (req, res, next) => {
       if (user) {
         req.user = {
           id: user._id,
+          _id: user._id,
           email: user.email,
           name: user.name,
           type: user.type,
           loginMethod: user.loginMethod,
+          phone: user.phone,
         };
       }
     }
@@ -126,4 +131,40 @@ export const optionalAuth = async (req, res, next) => {
   } catch (error) {
     next();
   }
+};
+
+// NEW: Check if user owns the resource (for service requests)
+export const checkOwnership = (getResourceUserId) => {
+  return async (req, res, next) => {
+    try {
+      // If admin, always allow
+      if (req.user.type === "admin") {
+        return next();
+      }
+
+      const resourceUserId = await getResourceUserId(req);
+
+      if (!resourceUserId) {
+        return res.status(404).json({
+          success: false,
+          message: "Resource not found",
+        });
+      }
+
+      if (resourceUserId.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You don't have permission to access this resource",
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Ownership check error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error checking ownership",
+      });
+    }
+  };
 };

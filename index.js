@@ -30,6 +30,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import becomeAMemberRoutes from "./routes/becomeamemberRoutes.js";
 
+// ✅ NEW: Import service routes
+import serviceRoutes from "./routes/serviceRoutes.js";
+
 // ✅ Load environment variables FIRST
 dotenv.config();
 
@@ -91,7 +94,9 @@ const allowedOrigins = [
   "https://osheen-oracle-dashboard.vercel.app",
 ];
 
-const cleanedAllowedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
+const cleanedAllowedOrigins = allowedOrigins.map((origin) =>
+  origin.replace(/\/$/, ""),
+);
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -173,7 +178,12 @@ app.use("/api/spell-types", spellTypeRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api", homeRoutes);
 app.use("/api/becomeamember", becomeAMemberRoutes);
+
+// ✅ NEW: Add service routes
+app.use("/api/services", serviceRoutes);
+
 app.use("/uploads", express.static("/var/www/uploads"));
+
 // ======================
 // HEALTH CHECK
 // ======================
@@ -187,8 +197,10 @@ app.get("/", (req, res) => {
     endpoints: {
       home: "/api/home",
       adminHome: "/api/admin/home",
-      docs: "/api-docs"
-    }
+      docs: "/api-docs",
+      services: "/api/services", // ✅ Added
+      serviceRequests: "/api/services/requests", // ✅ Added
+    },
   });
 });
 
@@ -250,5 +262,7 @@ app.listen(PORT, () => {
 🩺 Health Check: http://localhost:${PORT}/
 🏠 Home API: http://localhost:${PORT}/api/home
 🔐 Admin Home API: http://localhost:${PORT}/api/admin/home
+✨ Services API: http://localhost:${PORT}/api/services
+📝 Service Requests: http://localhost:${PORT}/api/services/requests
   `);
 });
