@@ -1,4 +1,4 @@
-import Service from "../models/Service.js";
+import Service from "../models/service.js";
 import ServiceRequest from "../models/ServiceRequest.js";
 
 // ============= SERVICE CRUD (Admin + Website) =============
