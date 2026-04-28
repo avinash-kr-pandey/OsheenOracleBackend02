@@ -10,22 +10,24 @@ export const uploadFile = (req, res) => {
     }
 
     // Determine file type
-    let fileType = 'document';
-    if (req.file.mimetype.startsWith('image/')) {
-      fileType = 'image';
-    } else if (req.file.mimetype.startsWith('video/')) {
-      fileType = 'video';
+    let fileType = "document";
+    let subPath = "";
+
+    if (req.file.mimetype.startsWith("image/")) {
+      fileType = "image";
+      subPath = "images";
+    } else if (req.file.mimetype.startsWith("video/")) {
+      fileType = "video";
+      subPath = "videos";
     }
 
-    // Construct URL based on file type
-    let fileUrl;
-    if (req.file.mimetype.startsWith('image/')) {
-      fileUrl = `${req.protocol}://${req.get("host")}/uploads/images/${req.file.filename}`;
-    } else if (req.file.mimetype.startsWith('video/')) {
-      fileUrl = `${req.protocol}://${req.get("host")}/uploads/videos/${req.file.filename}`;
-    } else {
-      fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    }
+    // Get base URL (works on Hostinger)
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    const host = req.headers.host;
+    const baseUrl = `${protocol}://${host}`;
+
+    // Construct URL
+    const fileUrl = `${baseUrl}/uploads/${subPath}/${req.file.filename}`;
 
     return res.json({
       success: true,
@@ -41,8 +43,10 @@ export const uploadFile = (req, res) => {
     });
   } catch (err) {
     console.error("Upload error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Upload failed", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Upload failed",
+      error: err.message,
+    });
   }
 };

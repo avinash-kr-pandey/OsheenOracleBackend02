@@ -29,10 +29,11 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import becomeAMemberRoutes from "./routes/becomeamemberRoutes.js";
+import fs from "fs";
 
-// ✅ NEW: Import service routes
+// ✅ Import service routes
 import serviceRoutes from "./routes/serviceRoutes.js";
-
+import paymentRoutes from "./routes/paymentRoutes.js";
 // ✅ Load environment variables FIRST
 dotenv.config();
 
@@ -45,7 +46,6 @@ const app = express();
 // ======================
 // DATABASE CONNECTION (WITH AWAIT)
 // ======================
-// ✅ Fix: Use IIFE to connect before starting server
 (async () => {
   try {
     console.log("🔄 Connecting to MongoDB...");
@@ -73,7 +73,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.PORT || 5000}`,
+        url: `${process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`}`,
         description: "Development server",
       },
     ],
@@ -92,7 +92,9 @@ const allowedOrigins = [
   "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-website-updated.vercel.app",
   "https://osheen-oracle-dashboard.vercel.app",
-];
+  "https://yourdomain.com", // Add your Hostinger domain
+  process.env.FRONTEND_URL, // Add from .env
+].filter(Boolean);
 
 const cleanedAllowedOrigins = allowedOrigins.map((origin) =>
   origin.replace(/\/$/, ""),
@@ -100,10 +102,14 @@ const cleanedAllowedOrigins = allowedOrigins.map((origin) =>
 
 const corsOptions = {
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) {
       return callback(null, true);
     }
-    if (cleanedAllowedOrigins.indexOf(origin) !== -1) {
+    if (
+      cleanedAllowedOrigins.indexOf(origin) !== -1 ||
+      process.env.NODE_ENV !== "production"
+    ) {
       console.log(`✅ CORS allowed for origin: ${origin}`);
       callback(null, true);
     } else {
@@ -144,9 +150,71 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Serve uploaded files
+// ======================
+// UPLOADS DIRECTORY SETUP (IMPORTANT FOR HOSTINGER)
+// ======================
+const setupUploadsDirectory = () => {
+  // Try multiple possible paths for Hostinger
+  const possiblePaths = [
+    path.join(__dirname, "uploads"),
+    path.join(__dirname, "public", "uploads"),
+    "/var/www/uploads",
+    "/home/u123456789/public_html/uploads", // Replace with your actual path
+    path.join(process.cwd(), "uploads"),
+    path.join(process.cwd(), "public", "uploads"),
+  ];
+
+  let uploadsPath = null;
+
+  for (const dirPath of possiblePaths) {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        console.log(`✅ Created uploads directory: ${dirPath}`);
+      } else {
+        console.log(`✅ Uploads directory exists: ${dirPath}`);
+      }
+
+      // Create subdirectories
+      const imagesDir = path.join(dirPath, "images");
+      const videosDir = path.join(dirPath, "videos");
+      const documentsDir = path.join(dirPath, "documents");
+
+      [imagesDir, videosDir, documentsDir].forEach((subDir) => {
+        if (!fs.existsSync(subDir)) {
+          fs.mkdirSync(subDir, { recursive: true });
+        }
+      });
+
+      uploadsPath = dirPath;
+      break;
+    } catch (err) {
+      console.log(`Cannot create/access ${dirPath}:`, err.message);
+    }
+  }
+
+  return uploadsPath;
+};
+
+const uploadsPath = setupUploadsDirectory();
+console.log(`📁 Using uploads directory: ${uploadsPath}`);
+
+// ======================
+// SERVE STATIC FILES (MULTIPLE LOCATIONS FOR FLEXIBILITY)
+// ======================
+// Serve from local uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
+
+// Serve from absolute path if exists
+if (uploadsPath && uploadsPath !== path.join(__dirname, "uploads")) {
+  app.use("/uploads", express.static(uploadsPath));
+}
+
+// For Hostinger absolute path
+if (fs.existsSync("/var/www/uploads")) {
+  app.use("/uploads", express.static("/var/www/uploads"));
+}
 
 // ======================
 // SWAGGER DOCS
@@ -179,10 +247,13 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api", homeRoutes);
 app.use("/api/becomeamember", becomeAMemberRoutes);
 
-// ✅ NEW: Add service routes
+// ✅ Service routes
 app.use("/api/services", serviceRoutes);
 
-app.use("/uploads", express.static("/var/www/uploads"));
+// Paymet routes
+
+app.use("/api/payment", paymentRoutes);
+
 
 // ======================
 // HEALTH CHECK
@@ -192,14 +263,17 @@ app.get("/", (req, res) => {
     success: true,
     message: "API is running...",
     environment: process.env.NODE_ENV,
+    uploadsPath: uploadsPath,
     allowedOrigins: cleanedAllowedOrigins,
     timestamp: new Date().toISOString(),
     endpoints: {
       home: "/api/home",
       adminHome: "/api/admin/home",
       docs: "/api-docs",
-      services: "/api/services", // ✅ Added
-      serviceRequests: "/api/services/requests", // ✅ Added
+      services: "/api/services",
+      serviceRequests: "/api/services/requests",
+      categories: "/api/services/categories",
+      upload: "/api/uploads/file-upload",
     },
   });
 });
@@ -213,6 +287,30 @@ app.get("/api/cors-test", (req, res) => {
     message: "CORS is working!",
     origin: req.headers.origin,
     timestamp: new Date().toISOString(),
+  });
+});
+
+// ======================
+// UPLOAD TEST ENDPOINT
+// ======================
+app.get("/api/upload-test", (req, res) => {
+  const uploadDirs = {
+    localUploads: fs.existsSync(path.join(__dirname, "uploads")),
+    publicUploads: fs.existsSync(path.join(__dirname, "public", "uploads")),
+    varWwwUploads: fs.existsSync("/var/www/uploads"),
+    uploadsPath: uploadsPath,
+    imagesDir: uploadsPath
+      ? fs.existsSync(path.join(uploadsPath, "images"))
+      : false,
+    videosDir: uploadsPath
+      ? fs.existsSync(path.join(uploadsPath, "videos"))
+      : false,
+  };
+
+  res.json({
+    success: true,
+    message: "Upload directories status",
+    directories: uploadDirs,
   });
 });
 
@@ -241,6 +339,14 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Handle multer errors
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      success: false,
+      message: "File too large. Maximum size is 50MB",
+    });
+  }
+
   res.status(500).json({
     success: false,
     message: "Internal Server Error",
@@ -257,6 +363,7 @@ app.listen(PORT, () => {
   console.log(`   
 🚀 Server running on port ${PORT}
 🔧 Environment: ${process.env.NODE_ENV || "development"}
+📁 Uploads Directory: ${uploadsPath}
 🌐 Allowed Origins: ${cleanedAllowedOrigins.join(", ")}
 📊 API Docs: http://localhost:${PORT}/api-docs
 🩺 Health Check: http://localhost:${PORT}/
@@ -264,5 +371,7 @@ app.listen(PORT, () => {
 🔐 Admin Home API: http://localhost:${PORT}/api/admin/home
 ✨ Services API: http://localhost:${PORT}/api/services
 📝 Service Requests: http://localhost:${PORT}/api/services/requests
+📂 Categories API: http://localhost:${PORT}/api/services/categories
+📤 Upload API: http://localhost:${PORT}/api/uploads/file-upload
   `);
 });

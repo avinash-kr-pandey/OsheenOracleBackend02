@@ -1,105 +1,99 @@
-import Service from "../models/Service.js";
-import ServiceRequest from "../models/ServiceRequest.js";
+import { Service, ServiceRequest } from "../models/service.js";
 
-// ============= SERVICE CRUD (Admin + Website) =============
+// ============= CATEGORY & SUBCATEGORY MANAGEMENT =============
 
-// @desc    Create a new service
-// @route   POST /api/services
+// @desc    Create a new category
+// @route   POST /api/services/categories
 // @access  Private/Admin
-export const createService = async (req, res) => {
+export const createCategory = async (req, res) => {
   try {
-    const { name, description, price, duration, category, icon, image, order } =
-      req.body;
+    const { name, description, icon, image, order } = req.body;
 
-    const existingService = await Service.findOne({ name });
-    if (existingService) {
+    const existingCategory = await Service.findOne({ name });
+    if (existingCategory) {
       return res.status(400).json({
         success: false,
-        message: "Service with this name already exists",
+        message: "Category with this name already exists",
       });
     }
 
-    const service = await Service.create({
+    const category = await Service.create({
       name,
       description,
-      price,
-      duration,
-      category,
       icon,
       image,
       order,
       isActive: true,
+      subcategories: [],
     });
 
     res.status(201).json({
       success: true,
-      data: service,
-      message: "Service created successfully",
+      data: category,
+      message: "Category created successfully",
     });
   } catch (error) {
-    console.error("Error in createService:", error);
+    console.error("Error in createCategory:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get all services (Website & Admin)
-// @route   GET /api/services
+// @desc    Get all categories (with optional filtering)
+// @route   GET /api/services/categories
 // @access  Public
-export const getAllServices = async (req, res) => {
+export const getAllCategories = async (req, res) => {
   try {
-    const { isActive, category } = req.query;
-
+    const { isActive } = req.query;
     let filter = {};
     if (isActive !== undefined) filter.isActive = isActive === "true";
-    if (category) filter.category = category;
 
-    const services = await Service.find(filter).sort({
+    const categories = await Service.find(filter).sort({
       order: 1,
       createdAt: -1,
     });
 
     res.status(200).json({
       success: true,
-      count: services.length,
-      data: services,
+      count: categories.length,
+      data: categories,
     });
   } catch (error) {
-    console.error("Error in getAllServices:", error);
+    console.error("Error in getAllCategories:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get single service by ID
-// @route   GET /api/services/:id
+// @desc    Get single category by ID
+// @route   GET /api/services/categories/:id
 // @access  Public
-export const getServiceById = async (req, res) => {
+export const getCategoryById = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
+    const category = await Service.findById(req.params.id);
+    if (!category) {
       return res
         .status(404)
-        .json({ success: false, message: "Service not found" });
+        .json({ success: false, message: "Category not found" });
     }
-    res.status(200).json({ success: true, data: service });
+    res.status(200).json({ success: true, data: category });
   } catch (error) {
-    console.error("Error in getServiceById:", error);
+    console.error("Error in getCategoryById:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Update service (Admin)
-// @route   PUT /api/services/:id
+// @desc    Update category
+// @route   PUT /api/services/categories/:id
 // @access  Private/Admin
-export const updateService = async (req, res) => {
+export const updateCategory = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
+    const category = await Service.findById(req.params.id);
+    if (!category) {
       return res
         .status(404)
-        .json({ success: false, message: "Service not found" });
+        .json({ success: false, message: "Category not found" });
     }
 
-    const updatedService = await Service.findByIdAndUpdate(
+    const updatedCategory = await Service.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true },
@@ -107,81 +101,240 @@ export const updateService = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: updatedService,
-      message: "Service updated successfully",
+      data: updatedCategory,
+      message: "Category updated successfully",
     });
   } catch (error) {
-    console.error("Error in updateService:", error);
+    console.error("Error in updateCategory:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Delete service (Admin)
-// @route   DELETE /api/services/:id
+// @desc    Delete category (only if no pending requests)
+// @route   DELETE /api/services/categories/:id
 // @access  Private/Admin
-export const deleteService = async (req, res) => {
+export const deleteCategory = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
+    const category = await Service.findById(req.params.id);
+    if (!category) {
       return res
         .status(404)
-        .json({ success: false, message: "Service not found" });
+        .json({ success: false, message: "Category not found" });
     }
 
-    // Check if any pending requests exist
+    // Check for pending requests
     const pendingRequests = await ServiceRequest.countDocuments({
-      service: req.params.id,
+      category: req.params.id,
       status: { $in: ["pending", "confirmed", "in_progress"] },
     });
 
     if (pendingRequests > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete. ${pendingRequests} active request(s) exist for this service.`,
+        message: `Cannot delete. ${pendingRequests} active request(s) exist for this category.`,
       });
     }
 
-    await service.deleteOne();
+    await category.deleteOne();
     res
       .status(200)
-      .json({ success: true, message: "Service deleted successfully" });
+      .json({ success: true, message: "Category deleted successfully" });
   } catch (error) {
-    console.error("Error in deleteService:", error);
+    console.error("Error in deleteCategory:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Toggle service active/inactive (Admin)
-// @route   PATCH /api/services/:id/toggle
+// @desc    Toggle category active/inactive
+// @route   PATCH /api/services/categories/:id/toggle
 // @access  Private/Admin
-export const toggleServiceStatus = async (req, res) => {
+export const toggleCategoryStatus = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
+    const category = await Service.findById(req.params.id);
+    if (!category) {
       return res
         .status(404)
-        .json({ success: false, message: "Service not found" });
+        .json({ success: false, message: "Category not found" });
     }
 
-    service.isActive = !service.isActive;
-    await service.save();
+    category.isActive = !category.isActive;
+    await category.save();
 
     res.status(200).json({
       success: true,
-      data: service,
-      message: `Service ${service.isActive ? "activated" : "deactivated"}`,
+      data: category,
+      message: `Category ${category.isActive ? "activated" : "deactivated"}`,
     });
   } catch (error) {
-    console.error("Error in toggleServiceStatus:", error);
+    console.error("Error in toggleCategoryStatus:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ============= SERVICE REQUEST (Website Form Submission) =============
+// ============= SUBCATEGORY MANAGEMENT =============
 
-// @desc    Submit service request (Website)
+// @desc    Add subcategory to a category
+// @route   POST /api/services/categories/:categoryId/subcategories
+// @access  Private/Admin
+export const addSubcategory = async (req, res) => {
+  try {
+    const { name, description, price, duration, icon, image, order } = req.body;
+    const category = await Service.findById(req.params.categoryId);
+
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    // Check if subcategory with same name exists
+    const subcategoryExists = category.subcategories.some(
+      (sub) => sub.name.toLowerCase() === name.toLowerCase(),
+    );
+
+    if (subcategoryExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Subcategory with this name already exists in this category",
+      });
+    }
+
+    category.subcategories.push({
+      name,
+      description,
+      price,
+      duration,
+      icon,
+      image,
+      order,
+      isActive: true,
+    });
+
+    await category.save();
+
+    res.status(201).json({
+      success: true,
+      data: category,
+      message: "Subcategory added successfully",
+    });
+  } catch (error) {
+    console.error("Error in addSubcategory:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update subcategory
+// @route   PUT /api/services/categories/:categoryId/subcategories/:subcategoryId
+// @access  Private/Admin
+export const updateSubcategory = async (req, res) => {
+  try {
+    const category = await Service.findById(req.params.categoryId);
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    const subcategory = category.subcategories.id(req.params.subcategoryId);
+    if (!subcategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subcategory not found" });
+    }
+
+    // Update fields
+    Object.assign(subcategory, req.body);
+    await category.save();
+
+    res.status(200).json({
+      success: true,
+      data: category,
+      message: "Subcategory updated successfully",
+    });
+  } catch (error) {
+    console.error("Error in updateSubcategory:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete subcategory
+// @route   DELETE /api/services/categories/:categoryId/subcategories/:subcategoryId
+// @access  Private/Admin
+export const deleteSubcategory = async (req, res) => {
+  try {
+    const category = await Service.findById(req.params.categoryId);
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    // Check for pending requests with this subcategory
+    const pendingRequests = await ServiceRequest.countDocuments({
+      category: req.params.categoryId,
+      "subcategory.name": category.subcategories.id(req.params.subcategoryId)
+        ?.name,
+      status: { $in: ["pending", "confirmed", "in_progress"] },
+    });
+
+    if (pendingRequests > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete. ${pendingRequests} active request(s) exist for this subcategory.`,
+      });
+    }
+
+    category.subcategories.pull({ _id: req.params.subcategoryId });
+    await category.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Subcategory deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error in deleteSubcategory:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Toggle subcategory active/inactive
+// @route   PATCH /api/services/categories/:categoryId/subcategories/:subcategoryId/toggle
+// @access  Private/Admin
+export const toggleSubcategoryStatus = async (req, res) => {
+  try {
+    const category = await Service.findById(req.params.categoryId);
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    const subcategory = category.subcategories.id(req.params.subcategoryId);
+    if (!subcategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subcategory not found" });
+    }
+
+    subcategory.isActive = !subcategory.isActive;
+    await category.save();
+
+    res.status(200).json({
+      success: true,
+      data: category,
+      message: `Subcategory ${subcategory.isActive ? "activated" : "deactivated"}`,
+    });
+  } catch (error) {
+    console.error("Error in toggleSubcategoryStatus:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ============= SERVICE REQUESTS =============
+
+// @desc    Submit service request
 // @route   POST /api/services/requests
-// @access  Public (Logged in user or guest)
+// @access  Public (with optional auth)
 export const submitServiceRequest = async (req, res) => {
   try {
     const {
@@ -189,7 +342,8 @@ export const submitServiceRequest = async (req, res) => {
       email,
       phone,
       address,
-      serviceId,
+      categoryId,
+      subcategoryId,
       communicationMode,
       description,
       preferredDate,
@@ -202,7 +356,8 @@ export const submitServiceRequest = async (req, res) => {
       !email ||
       !phone ||
       !address ||
-      !serviceId ||
+      !categoryId ||
+      !subcategoryId ||
       !communicationMode ||
       !description
     ) {
@@ -212,18 +367,33 @@ export const submitServiceRequest = async (req, res) => {
       });
     }
 
-    // Check if service exists and is active
-    const service = await Service.findById(serviceId);
-    if (!service) {
+    // Check if category exists and is active
+    const category = await Service.findById(categoryId);
+    if (!category) {
       return res
         .status(404)
-        .json({ success: false, message: "Service not found" });
+        .json({ success: false, message: "Category not found" });
     }
 
-    if (!service.isActive) {
+    if (!category.isActive) {
       return res.status(400).json({
         success: false,
-        message: "This service is currently unavailable",
+        message: "This category is currently unavailable",
+      });
+    }
+
+    // Find subcategory
+    const subcategory = category.subcategories.id(subcategoryId);
+    if (!subcategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Subcategory not found" });
+    }
+
+    if (!subcategory.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "This subcategory is currently unavailable",
       });
     }
 
@@ -233,8 +403,11 @@ export const submitServiceRequest = async (req, res) => {
       email,
       phone,
       address,
-      service: serviceId,
-      serviceName: service.name,
+      category: categoryId,
+      categoryName: category.name,
+      subcategory: subcategory.toObject(),
+      subcategoryName: subcategory.name,
+      price: subcategory.price,
       communicationMode,
       description,
       preferredDate: preferredDate || null,
@@ -242,7 +415,6 @@ export const submitServiceRequest = async (req, res) => {
       isGuest: !req?.user,
     };
 
-    // If user is logged in (optional auth se aaya hai)
     if (req?.user) {
       requestData.user = req.user._id;
     }
@@ -251,7 +423,7 @@ export const submitServiceRequest = async (req, res) => {
 
     const populatedRequest = await ServiceRequest.findById(
       serviceRequest._id,
-    ).populate("service", "name price duration");
+    ).populate("category", "name description");
 
     res.status(201).json({
       success: true,
@@ -265,12 +437,11 @@ export const submitServiceRequest = async (req, res) => {
   }
 };
 
-// @desc    Get all service requests (Admin + User)
+// @desc    Get all service requests
 // @route   GET /api/services/requests
-// @access  Private (Admin sees all, User sees their own)
+// @access  Private (Admin sees all, users see their own)
 export const getServiceRequests = async (req, res) => {
   try {
-    // Check if user is authenticated
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -281,7 +452,6 @@ export const getServiceRequests = async (req, res) => {
     let filter = {};
     const { status } = req.query;
 
-    // If not admin, only show user's own requests
     if (req.user.type !== "admin") {
       filter.user = req.user._id;
     }
@@ -291,7 +461,7 @@ export const getServiceRequests = async (req, res) => {
     }
 
     const requests = await ServiceRequest.find(filter)
-      .populate("service", "name price duration")
+      .populate("category", "name description icon")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -310,7 +480,6 @@ export const getServiceRequests = async (req, res) => {
 // @access  Private (Admin or Owner)
 export const getServiceRequestById = async (req, res) => {
   try {
-    // Check if user is authenticated
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -318,9 +487,10 @@ export const getServiceRequestById = async (req, res) => {
       });
     }
 
-    const request = await ServiceRequest.findById(req.params.id)
-      .populate("service", "name description price duration")
-      .populate("user", "name email phone");
+    const request = await ServiceRequest.findById(req.params.id).populate(
+      "category",
+      "name description icon",
+    );
 
     if (!request) {
       return res
@@ -332,7 +502,7 @@ export const getServiceRequestById = async (req, res) => {
     if (
       req.user.type !== "admin" &&
       request.user &&
-      request.user._id.toString() !== req.user._id.toString()
+      request.user.toString() !== req.user._id.toString()
     ) {
       return res
         .status(403)
@@ -346,20 +516,12 @@ export const getServiceRequestById = async (req, res) => {
   }
 };
 
-// @desc    Update request status (Admin)
+// @desc    Update request status
 // @route   PATCH /api/services/requests/:id/status
 // @access  Private/Admin
 export const updateRequestStatus = async (req, res) => {
   try {
-    // Check if user is authenticated and is admin
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authorized. Please login.",
-      });
-    }
-
-    if (req.user.type !== "admin") {
+    if (!req.user || req.user.type !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -376,7 +538,6 @@ export const updateRequestStatus = async (req, res) => {
     }
 
     const request = await ServiceRequest.findById(req.params.id);
-
     if (!request) {
       return res
         .status(404)
@@ -398,20 +559,12 @@ export const updateRequestStatus = async (req, res) => {
   }
 };
 
-// @desc    Delete service request (Admin)
+// @desc    Delete service request
 // @route   DELETE /api/services/requests/:id
 // @access  Private/Admin
 export const deleteServiceRequest = async (req, res) => {
   try {
-    // Check if user is authenticated and is admin
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authorized. Please login.",
-      });
-    }
-
-    if (req.user.type !== "admin") {
+    if (!req.user || req.user.type !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -435,38 +588,56 @@ export const deleteServiceRequest = async (req, res) => {
   }
 };
 
-// @desc    Get dashboard stats (Admin)
+// ============= DASHBOARD STATS =============
+
+// @desc    Get dashboard stats
 // @route   GET /api/services/admin/stats
 // @access  Private/Admin
 export const getDashboardStats = async (req, res) => {
   try {
-    // Check if user is authenticated and is admin
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authorized. Please login.",
-      });
-    }
-
-    if (req.user.type !== "admin") {
+    if (!req.user || req.user.type !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Admin access required",
       });
     }
 
-    const [total, pending, completed, cancelled] = await Promise.all([
+    const [
+      total,
+      pending,
+      completed,
+      cancelled,
+      activeCategories,
+      totalSubcategories,
+    ] = await Promise.all([
       ServiceRequest.countDocuments(),
       ServiceRequest.countDocuments({ status: "pending" }),
       ServiceRequest.countDocuments({ status: "completed" }),
       ServiceRequest.countDocuments({ status: "cancelled" }),
+      Service.countDocuments({ isActive: true }),
+      Service.aggregate([
+        { $unwind: "$subcategories" },
+        { $match: { "subcategories.isActive": true } },
+        { $count: "total" },
+      ]),
     ]);
 
-    // Service-wise distribution
-    const serviceDistribution = await ServiceRequest.aggregate([
+    // Category-wise distribution
+    const categoryDistribution = await ServiceRequest.aggregate([
       {
         $group: {
-          _id: "$serviceName",
+          _id: "$categoryName",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    // Subcategory-wise distribution
+    const subcategoryDistribution = await ServiceRequest.aggregate([
+      {
+        $group: {
+          _id: "$subcategoryName",
           count: { $sum: 1 },
         },
       },
@@ -475,7 +646,7 @@ export const getDashboardStats = async (req, res) => {
 
     // Recent requests
     const recentRequests = await ServiceRequest.find()
-      .populate("service", "name")
+      .populate("category", "name")
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -486,7 +657,10 @@ export const getDashboardStats = async (req, res) => {
         pendingRequests: pending,
         completedRequests: completed,
         cancelledRequests: cancelled,
-        serviceDistribution,
+        activeCategories,
+        totalSubcategories: totalSubcategories[0]?.total || 0,
+        categoryDistribution,
+        subcategoryDistribution,
         recentRequests,
       },
     });
