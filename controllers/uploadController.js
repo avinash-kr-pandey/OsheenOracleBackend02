@@ -1,6 +1,3 @@
-import path from "path";
-import fs from "fs";
-
 export const uploadFile = (req, res) => {
   try {
     if (!req.file) {

@@ -45,8 +45,10 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // 4. Check if user is verified (for email users) - Skip for admin
+    // 4. Check if user is verified (OPTIONAL - only for specific routes)
+    // Sirf un routes ke liye check karega jahan req.requireVerification = true ho
     if (
+      req.requireVerification &&
       user.loginMethod === "email" &&
       !user.isVerified &&
       user.type !== "admin"
@@ -60,10 +62,10 @@ export const protect = async (req, res, next) => {
     // 5. Attach user to request object (complete user object)
     req.user = {
       id: user._id,
-      _id: user._id, // Added for consistency
+      _id: user._id,
       email: user.email,
       name: user.name,
-      type: user.type, // 'user' or 'admin'
+      type: user.type,
       loginMethod: user.loginMethod,
       isVerified: user.isVerified,
       phone: user.phone,
@@ -78,6 +80,12 @@ export const protect = async (req, res, next) => {
       message: "Server error in authentication",
     });
   }
+};
+
+// Middleware to require email verification for specific routes
+export const requireVerification = (req, res, next) => {
+  req.requireVerification = true;
+  next();
 };
 
 // Admin middleware - checks if user is admin
@@ -133,7 +141,7 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
-// NEW: Check if user owns the resource (for service requests)
+// Check if user owns the resource (for service requests)
 export const checkOwnership = (getResourceUserId) => {
   return async (req, res, next) => {
     try {

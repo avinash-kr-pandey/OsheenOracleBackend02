@@ -1,57 +1,3 @@
-/**
- * @swagger
- * components:
- *   schemas:
- *     Product:
- *       type: object
- *       required:
- *         - name
- *         - price
- *         - originalPrice
- *         - image
- *       properties:
- *         name:
- *           type: string
- *         price:
- *           type: number
- *         originalPrice:
- *           type: number
- *         image:
- *           type: string
- *         discount:
- *           type: string
- *         description:
- *           type: string
- *         category:
- *           type: string
- *         inStock:
- *           type: boolean
- *         hasColorOptions:
- *           type: boolean
- *           description: Whether the product has color variants chosen by admin
- *         colors:
- *           type: array
- *           items:
- *             type: string
- *         sizeOptions:
- *           type: array
- *           items:
- *             type: number
- *           description: Allowed sizes (1, 1.5, 2, 2.5 ... 10)
- *         reviews:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               admin:
- *                 type: string
- *               rating:
- *                 type: number
- *               comment:
- *                 type: string
- */
-
-
 import mongoose from "mongoose";
 
 // default size options: 1, 1.5, 2, 2.5, ... 10
@@ -63,10 +9,10 @@ for (let i = 1.0; i <= 10.0; i += 0.5) {
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    price: { type: Number, required: true },                // ₹3499 → 3499
-    originalPrice: { type: Number, required: true },        // ₹4999 → 4999
+    price: { type: Number, required: true }, 
+    originalPrice: { type: Number, required: true }, 
     image: { type: String, required: true },
-    discount: { type: String },                              // "30% off"
+    discount: { type: String }, // "30% off"
     description: { type: String },
     category: { type: String },
     inStock: { type: Boolean, default: true },
@@ -91,7 +37,7 @@ const productSchema = new mongoose.Schema(
     averageRating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Product", productSchema);

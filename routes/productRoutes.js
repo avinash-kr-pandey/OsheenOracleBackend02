@@ -21,10 +21,63 @@ const router = express.Router();
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Product:
+ *       type: object
+ *       required:
+ *         - name
+ *         - price
+ *         - originalPrice
+ *         - image
+ *       properties:
+ *         name:
+ *           type: string
+ *         price:
+ *           type: number
+ *         originalPrice:
+ *           type: number
+ *         image:
+ *           type: string
+ *         discount:
+ *           type: string
+ *         description:
+ *           type: string
+ *         category:
+ *           type: string
+ *         inStock:
+ *           type: boolean
+ *         hasColorOptions:
+ *           type: boolean
+ *         colors:
+ *           type: array
+ *           items:
+ *             type: string
+ *         sizeOptions:
+ *           type: array
+ *           items:
+ *             type: number
+ *         reviews:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               admin:
+ *                 type: string
+ *               rating:
+ *                 type: number
+ *               comment:
+ *                 type: string
+ */
+
+/**
+ * @swagger
  * /api/products:
  *   post:
  *     summary: Create a new product
  *     tags: [Products]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -34,12 +87,8 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Product created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
  */
-router.post("/",createProduct);
+router.post("/", protect, isAdmin, createProduct);
 
 /**
  * @swagger
@@ -50,12 +99,6 @@ router.post("/",createProduct);
  *     responses:
  *       200:
  *         description: List of all products
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Product'
  */
 router.get("/", getProducts);
 
@@ -71,16 +114,9 @@ router.get("/", getProducts);
  *         required: true
  *         schema:
  *           type: string
- *         description: Product ID
  *     responses:
  *       200:
  *         description: Product details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
- *       404:
- *         description: Product not found
  */
 router.get("/:id", getProduct);
 
@@ -98,7 +134,6 @@ router.get("/:id", getProduct);
  *         required: true
  *         schema:
  *           type: string
- *         description: Product ID
  *     requestBody:
  *       required: true
  *       content:
@@ -122,13 +157,14 @@ router.post("/:id/reviews", protect, isAdmin, addReview);
  *   put:
  *     summary: Update a product
  *     tags: [Products]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Product ID
  *     requestBody:
  *       required: true
  *       content:
@@ -138,10 +174,6 @@ router.post("/:id/reviews", protect, isAdmin, addReview);
  *     responses:
  *       200:
  *         description: Product updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
  */
 router.put("/:id", protect, isAdmin, updateProduct);
 
@@ -151,13 +183,14 @@ router.put("/:id", protect, isAdmin, updateProduct);
  *   delete:
  *     summary: Delete a product
  *     tags: [Products]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Product ID
  *     responses:
  *       200:
  *         description: Product deleted successfully

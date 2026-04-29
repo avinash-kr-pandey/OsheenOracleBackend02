@@ -376,3 +376,176 @@ export const createFirstAdmin = async () => {
     console.error("❌ Error creating admin:", error.message);
   }
 };
+
+// Add these functions to your authControllers.js file:
+
+// ---------------- UPDATE PROFILE ------------------
+export const updateProfile = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      name: Joi.string().optional(),
+      email: Joi.string().email().optional(),
+      phone: Joi.string().optional(),
+      dateOfBirth: Joi.date().optional(),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    const updates = req.body;
+
+    // Don't allow updating email for Google users
+    if (req.user.loginMethod === "google" && updates.email) {
+      delete updates.email;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    ).select("-password -resetPasswordToken -resetPasswordExpire");
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        avatar: user.avatar,
+        type: user.type,
+        loginMethod: user.loginMethod,
+        isVerified: user.isVerified,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ---------------- CHANGE PASSWORD ------------------
+export const changePassword = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      currentPassword: Joi.string().required(),
+      newPassword: Joi.string().min(6).required(),
+      confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required(),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    // Get user with password field
+    const user = await User.findById(req.user.id);
+
+    if (!user.password) {
+      return res.status(400).json({
+        success: false,
+        message: "This account uses Google login. Cannot change password.",
+      });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ---------------- UPDATE PROFILE IMAGE ------------------
+export const updateProfileImage = async (req, res) => {
+  try {
+    // Get user ID from logged-in user (not from params)
+    const userId = req.user.id || req.user._id;
+
+    console.log("Updating profile image for user:", userId);
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    const host = req.headers.host;
+
+    let subPath = "documents";
+    if (req.file.mimetype.startsWith("image/")) {
+      subPath = "images";
+    } else if (req.file.mimetype.startsWith("video/")) {
+      subPath = "videos";
+    }
+
+    const imageUrl = `${protocol}://${host}/uploads/${subPath}/${req.file.filename}`;
+    console.log("Image URL:", imageUrl);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { avatar: imageUrl },
+      { new: true },
+    ).select("-password -resetPasswordToken -resetPasswordExpire");
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Profile image updated successfully",
+      data: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        profileImage: imageUrl,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile image error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

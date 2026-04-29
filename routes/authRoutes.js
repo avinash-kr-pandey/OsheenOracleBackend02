@@ -1,26 +1,3 @@
-// import express from "express";
-// import {
-//   register,
-//   login,
-//   logout,
-//   forgotPassword,
-//   resetPassword,
-//   profile
-// } from "../controllers/authController.js";
-// import { protect } from "../middlewares/authMiddleware.js";
-
-// const router = express.Router();
-
-// router.post("/register", register);
-
-// router.post("/login", login);
-// router.post("/logout", logout);
-// router.post("/forgot-password", forgotPassword);
-// router.post("/reset-password/:token", resetPassword);
-
-// router.get("/profile", protect, profile);
-
-// export default router;
 import express from "express";
 import {
   register,
@@ -30,198 +7,112 @@ import {
   resetPassword,
   profile,
   googleLogin,
+  updateProfile,
+  changePassword,
+  updateProfileImage,
 } from "../controllers/authControllers.js";
 import { protect } from "../middlewares/authMiddleware.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
+// Configure multer for profile image upload
+const getUploadPath = () => {
+  if (process.env.NODE_ENV === "production") {
+    const possiblePaths = [
+      "/home/u123456789/public_html/uploads",
+      "/home/u123456789/domains/yourdomain.com/public_html/uploads",
+      path.join(process.cwd(), "public", "uploads"),
+      path.join(process.cwd(), "uploads"),
+    ];
 
+    for (const dirPath of possiblePaths) {
+      try {
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+        }
+        return dirPath;
+      } catch (err) {
+        console.log(`Cannot create ${dirPath}:`, err.message);
+      }
+    }
+  }
 
-/**
- * @swagger
- * tags:
- *   name: Authentication
- *   description: Auth API Endpoints
- */
+  return path.join(process.cwd(), "public", "uploads");
+};
 
-/**
- * @swagger
- * /api/auth/register:
- *   post:
- *     summary: Register a new user
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - email
- *               - password
- *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               type:
- *                 type: string
- *                 enum: ["user", "admin"]
- *                 description: Optional. Setting "admin" via public register is not allowed.
- *     responses:
- *       200:
- *         description: Registration successful
- */
+const baseUploadPath = getUploadPath();
+const imagesDir = path.join(baseUploadPath, "images");
+
+// Ensure images directory exists
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
+
+// Storage configuration for profile images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, imagesDir);
+  },
+  filename: (req, file, cb) => {
+    const safeName = file.originalname
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9.-]/g, "");
+    cb(null, `profile-${Date.now()}-${safeName}`);
+  },
+});
+
+// File filter for images only
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/jpg",
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed (jpeg, png, gif, webp)"), false);
+  }
+};
+
+// Multer configuration
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit for profile images
+});
+
+// ==================== AUTH ROUTES ====================
+
+// Public routes
 router.post("/register", register);
-
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Login user and get token
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Login successful
- */
 router.post("/login", login);
-
-
-/**
- * @swagger
- * tags:
- *   name: Authentication
- *   description: Auth API Endpoints
- */
-
-// ... existing routes ...
-
-/**
- * @swagger
- * /api/auth/google:
- *   post:
- *     summary: Login or register with Google
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - token
- *             properties:
- *               token:
- *                 type: string
- *                 description: Google ID token received from frontend
- *     responses:
- *       200:
- *         description: Google login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 token:
- *                   type: string
- *                 user:
- *                   $ref: '#/components/schemas/User'
- */
 router.post("/google", googleLogin);
-
-/**
- * @swagger
- * /api/auth/logout:
- *   post:
- *     summary: Logout user
- *     tags: [Authentication]
- *     responses:
- *       200:
- *         description: Logged out successfully
- */
 router.post("/logout", logout);
-
-/**
- * @swagger
- * /api/auth/forgot-password:
- *   post:
- *     summary: Send password reset link
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *     responses:
- *       200:
- *         description: Reset link sent
- */
 router.post("/forgot-password", forgotPassword);
-
-/**
- * @swagger
- * /api/auth/reset-password/{token}:
- *   post:
- *     summary: Reset password using token
- *     tags: [Authentication]
- *     parameters:
- *       - in: path
- *         name: token
- *         required: true
- *         schema:
- *           type: string
- *         description: Reset token
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Password reset successful
- */
 router.post("/reset-password/:token", resetPassword);
 
-/**
- * @swagger
- * /api/auth/profile:
- *   get:
- *     summary: Get user profile (Requires JWT)
- *     tags: [Authentication]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: User profile fetched
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- */
+// Protected routes (require authentication)
 router.get("/profile", protect, profile);
+router.put("/profile", protect, updateProfile);
+router.post("/change-password", protect, changePassword);
+
+// Profile image upload - WITHOUT :id parameter
+router.post(
+  "/update-profile-image", // ✅ Removed /:id
+  protect,
+  upload.single("file"),
+  updateProfileImage,
+);
 
 export default router;

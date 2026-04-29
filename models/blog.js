@@ -32,11 +32,12 @@ const blogSchema = new mongoose.Schema(
     },
     date: {
       type: String,
-      default: () => new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }),
+      default: () =>
+        new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }),
     },
     comments: {
       type: Number,
@@ -46,12 +47,19 @@ const blogSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    tags: {
+      type: [String],
+      default: [],
+    },
+    excerpt: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Blog = mongoose.model("Blog", blogSchema);
-
 export default Blog;
