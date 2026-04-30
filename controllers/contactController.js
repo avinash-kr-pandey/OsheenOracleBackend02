@@ -1,4 +1,4 @@
-import Contact from "../models/Contact.js";
+import Contact from "../models/contact.js";
 
 // @desc    Create new contact/booking
 // @route   POST /api/contacts
