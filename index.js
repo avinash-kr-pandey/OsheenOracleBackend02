@@ -35,6 +35,12 @@ import fs from "fs";
 import serviceRoutes from "./routes/serviceRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 // ✅ Load environment variables FIRST
+
+// Contact
+
+import contactRoutes from "./routes/contactRoutes.js"
+
+
 dotenv.config();
 
 // Get __dirname in ES modules
@@ -253,6 +259,10 @@ app.use("/api/services", serviceRoutes);
 // Paymet routes
 
 app.use("/api/payment", paymentRoutes);
+
+// Contact 
+
+app.use("/api/contact",  contactRoutes)
 
 
 // ======================
