@@ -264,6 +264,10 @@ app.use("/api/payment", paymentRoutes);
 
 app.use("/api/contact",  contactRoutes)
 
+// Announcements
+import announcementRoutes from "./routes/announcementRoutes.js";
+app.use("/api/announcements", announcementRoutes);
+
 
 // ======================
 // HEALTH CHECK

@@ -26,58 +26,11 @@ const contactSchema = new mongoose.Schema(
       trim: true,
       match: [/^[+]?[\d\s-]{10,15}$/, "Please enter a valid phone number"],
     },
-
-    // Consultation Details
-    desiredDate: {
-      type: Date,
-      required: [true, "Desired date is required"],
-    },
-    desiredTime: {
+    message: {
       type: String,
-      required: [true, "Desired time is required"],
-      trim: true,
-    },
-    additionalMessage: {
-      type: String,
+      required: [true, "Message is required"],
       maxlength: [1000, "Message cannot exceed 1000 characters"],
       trim: true,
-    },
-
-    // Astrologer Information
-    preferredAstrologer: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-    astrologerSpecialization: {
-      type: String,
-      enum: [
-        "Vedic",
-        "Tarot",
-        "Numerology",
-        "Palmistry",
-        "Vastu",
-        "General",
-        null,
-      ],
-      default: null,
-    },
-    assignedAstrologer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-
-    // Consultation Type
-    consultationType: {
-      type: String,
-      enum: ["chat", "call", "video", "in_person"],
-      default: "call",
-    },
-    consultationDuration: {
-      type: Number,
-      enum: [15, 30, 45, 60],
-      default: 30,
     },
 
     // User Information (if logged in)
@@ -90,54 +43,15 @@ const contactSchema = new mongoose.Schema(
     // Status Management
     status: {
       type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "in_progress",
-        "completed",
-        "cancelled",
-        "rescheduled",
-      ],
+      enum: ["pending", "contacted", "closed"],
       default: "pending",
     },
 
-    // Admin/Astrologer Notes
+    // Admin Notes
     adminNotes: {
       type: String,
       trim: true,
       default: "",
-    },
-    astrologerNotes: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    // Payment Information
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "paid", "refunded", "failed"],
-      default: "pending",
-    },
-    paymentAmount: {
-      type: Number,
-      default: null,
-    },
-    transactionId: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    // Meeting/Call Details
-    meetingLink: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    callScheduledTime: {
-      type: Date,
-      default: null,
     },
   },
   {
@@ -148,14 +62,7 @@ const contactSchema = new mongoose.Schema(
 // Indexes for better query performance
 contactSchema.index({ email: 1 });
 contactSchema.index({ status: 1 });
-contactSchema.index({ desiredDate: 1 });
-contactSchema.index({ assignedAstrologer: 1 });
 contactSchema.index({ createdAt: -1 });
-
-// Virtual for checking if consultation is upcoming
-contactSchema.virtual("isUpcoming").get(function () {
-  return this.status === "confirmed" && new Date(this.desiredDate) > new Date();
-});
 
 // Method to update status
 contactSchema.methods.updateStatus = async function (newStatus) {
@@ -165,37 +72,9 @@ contactSchema.methods.updateStatus = async function (newStatus) {
   return this;
 };
 
-// Method to assign astrologer
-contactSchema.methods.assignAstrologer = async function (
-  astrologerId,
-  astrologerNotes = "",
-) {
-  this.assignedAstrologer = astrologerId;
-  this.status = "confirmed";
-  this.astrologerNotes = astrologerNotes;
-  this.updatedAt = Date.now();
-  await this.save();
-  return this;
-};
-
-// Static method to get pending consultations
-contactSchema.statics.getPendingConsultations = async function () {
-  return await this.find({ status: "pending" })
-    .sort({ createdAt: 1 })
-    .populate("assignedAstrologer", "name email phone type");
-};
-
-// Static method to get todays consultations
-contactSchema.statics.getTodaysConsultations = async function () {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  return await this.find({
-    desiredDate: { $gte: today, $lt: tomorrow },
-    status: { $in: ["confirmed", "in_progress"] },
-  }).populate("assignedAstrologer", "name email phone type");
+// Static method to get pending contacts
+contactSchema.statics.getPendingContacts = async function () {
+  return await this.find({ status: "pending" }).sort({ createdAt: 1 });
 };
 
 const Contact = mongoose.model("Contact", contactSchema);
