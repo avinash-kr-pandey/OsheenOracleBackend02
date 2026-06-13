@@ -268,6 +268,10 @@ app.use("/api/contact",  contactRoutes)
 import announcementRoutes from "./routes/announcementRoutes.js";
 app.use("/api/announcements", announcementRoutes);
 
+// Product Categories
+import productCategoryRoutes from "./routes/productCategoryRoutes.js";
+app.use("/api/product-categories", productCategoryRoutes);
+
 
 // ======================
 // HEALTH CHECK

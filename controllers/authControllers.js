@@ -262,15 +262,21 @@ export const forgotPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
-    await sendEmail(
+    await sendEmail({
       email,
-      "Reset Password",
-      `
-      You requested a password reset.
-      Click this link to reset your password: ${resetUrl}
-      This link expires in 15 minutes.
-    `,
-    );
+      name: user.name || "",
+      subject: "Reset Password",
+      message: `
+        You requested a password reset.
+        Click this link to reset your password: ${resetUrl}
+        This link expires in 15 minutes.
+      `,
+      variables: {
+        reset_url: resetUrl,
+        resetUrl: resetUrl,
+        name: user.name || "User",
+      }
+    });
 
     res.json({
       success: true,

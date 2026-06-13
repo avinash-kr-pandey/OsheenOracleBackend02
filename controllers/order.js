@@ -5,7 +5,7 @@ export const createOrder = async (req, res) => {
   try {
     const { productName, price, status, image } = req.body;
 
-    const newOrder = await order.create({
+    const newOrder = await Order.create({
       user: req.user._id,
       productName,
       price,

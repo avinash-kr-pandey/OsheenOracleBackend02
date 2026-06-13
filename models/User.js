@@ -74,9 +74,6 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-// Index for Google OAuth
-userSchema.index({ googleId: 1 }, { sparse: true });
-
 // Static method to find or create user for Google OAuth
 userSchema.statics.findOrCreate = async function (googleUser) {
   try {
