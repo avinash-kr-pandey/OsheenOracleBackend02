@@ -100,6 +100,7 @@ const allowedOrigins = [
   "https://osheen-oracle-dashboard.vercel.app",
   "https://yourdomain.com", // Add your Hostinger domain
   process.env.FRONTEND_URL, // Add from .env
+  process.env.PRODUCTION_URL, // Add from .env
 ].filter(Boolean);
 
 const cleanedAllowedOrigins = allowedOrigins.map((origin) =>
