@@ -1,10 +1,7 @@
 import mongoose from "mongoose";
 
-// default size options: 1, 1.5, 2, 2.5, ... 10
-const defaultSizes = [];
-for (let i = 1.0; i <= 10.0; i += 0.5) {
-  defaultSizes.push(Number(i.toFixed(1)));
-}
+// default size options: S, M, L, XL
+const defaultSizes = ["S", "M", "L", "XL"];
 
 const productSchema = new mongoose.Schema(
   {
@@ -21,8 +18,8 @@ const productSchema = new mongoose.Schema(
     hasColorOptions: { type: Boolean, default: false },
     colors: [{ type: String }],
 
-    // Size options (defaults to 1 -> 10 with 0.5 steps)
-    sizeOptions: { type: [Number], default: defaultSizes },
+    // Size options (defaults to ["S", "M", "L", "XL"])
+    sizeOptions: { type: [String], default: defaultSizes },
 
     // Reviews added by admin
     reviews: [

@@ -56,7 +56,7 @@ const router = express.Router();
  *         sizeOptions:
  *           type: array
  *           items:
- *             type: number
+ *             type: string
  *         reviews:
  *           type: array
  *           items:

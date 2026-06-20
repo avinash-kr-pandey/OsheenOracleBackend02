@@ -20,13 +20,13 @@ export const createProduct = async (req, res) => {
     if (
       sizeOptions &&
       (!Array.isArray(sizeOptions) ||
-        sizeOptions.some((s) => typeof s !== "number"))
+        sizeOptions.some((s) => typeof s !== "string"))
     ) {
       return res
         .status(400)
         .json({
           success: false,
-          message: "sizeOptions must be an array of numbers",
+          message: "sizeOptions must be an array of strings",
         });
     }
 
@@ -90,13 +90,13 @@ export const updateProduct = async (req, res) => {
     if (
       sizeOptions &&
       (!Array.isArray(sizeOptions) ||
-        sizeOptions.some((s) => typeof s !== "number"))
+        sizeOptions.some((s) => typeof s !== "string"))
     ) {
       return res
         .status(400)
         .json({
           success: false,
-          message: "sizeOptions must be an array of numbers",
+          message: "sizeOptions must be an array of strings",
         });
     }
 
