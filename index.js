@@ -99,6 +99,8 @@ const allowedOrigins = [
   "https://osheen-oracle-website-updated.vercel.app",
   "https://osheen-oracle-dashboard.vercel.app",
   "https://yourdomain.com", // Add your Hostinger domain
+  "https://osheenoracle.com",
+  "https://www.osheenoracle.com",
   process.env.FRONTEND_URL, // Add from .env
   process.env.PRODUCTION_URL, // Add from .env
 ].filter(Boolean);
@@ -263,7 +265,7 @@ app.use("/api/payment", paymentRoutes);
 
 // Contact 
 
-app.use("/api/contact",  contactRoutes)
+app.use("/api/contact", contactRoutes)
 
 // Announcements
 import announcementRoutes from "./routes/announcementRoutes.js";
