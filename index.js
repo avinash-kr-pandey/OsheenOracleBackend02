@@ -193,10 +193,11 @@ const setupUploadsDirectory = () => {
 
   // Try multiple possible paths for Hostinger
   const possiblePaths = [
+    "/home/u123456789/public_html/uploads",
+    "/home/u123456789/domains/yourdomain.com/public_html/uploads",
     path.join(__dirname, "uploads"),
     path.join(__dirname, "public", "uploads"),
     "/var/www/uploads",
-    "/home/u123456789/public_html/uploads", // Replace with your actual path
     path.join(process.cwd(), "uploads"),
     path.join(process.cwd(), "public", "uploads"),
   ];
@@ -207,10 +208,8 @@ const setupUploadsDirectory = () => {
     try {
       if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
-        console.log(`✅ Created uploads directory: ${dirPath}`);
-      } else {
-        console.log(`✅ Uploads directory exists: ${dirPath}`);
       }
+      console.log(`✅ Uploads directory exists: ${dirPath}`);
 
       // Create subdirectories
       const imagesDir = path.join(dirPath, "images");
@@ -251,6 +250,11 @@ if (uploadsPath && uploadsPath !== path.join(__dirname, "uploads")) {
 // For Hostinger absolute path
 if (fs.existsSync("/var/www/uploads")) {
   app.use("/uploads", express.static("/var/www/uploads"));
+}
+
+// Serve from Hostinger custom path if exists
+if (fs.existsSync("/home/u123456789/public_html/uploads")) {
+  app.use("/uploads", express.static("/home/u123456789/public_html/uploads"));
 }
 
 // ======================
