@@ -139,8 +139,11 @@ router.post(
         });
       }
 
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const host = req.headers.host;
+      let protocol = req.headers["x-forwarded-proto"] || req.protocol;
+      const host = req.headers.host || "";
+      if (!host.includes("localhost") && !host.includes("127.0.0.1")) {
+        protocol = "https";
+      }
       const baseUrl = `${protocol}://${host}`;
 
       const files = req.files.map((file) => {

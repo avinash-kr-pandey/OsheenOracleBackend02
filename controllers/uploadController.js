@@ -18,9 +18,12 @@ export const uploadFile = (req, res) => {
       subPath = "videos";
     }
 
-    // Get base URL (works on Hostinger)
-    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-    const host = req.headers.host;
+    // Get base URL (works on Hostinger and production VPS)
+    let protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    const host = req.headers.host || "";
+    if (!host.includes("localhost") && !host.includes("127.0.0.1")) {
+      protocol = "https";
+    }
     const baseUrl = `${protocol}://${host}`;
 
     // Construct URL
