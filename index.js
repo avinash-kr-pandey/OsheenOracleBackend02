@@ -95,6 +95,18 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+  "http://localhost:3004",
+  "http://localhost:3005",
+  "http://localhost:3006",
+  "http://localhost:3007",
+  "http://localhost:3008",
+  "http://localhost:3009",
+  "http://localhost:3010",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
   "https://osheen-oracle-website2-0.vercel.app",
   "https://osheen-oracle-website-updated.vercel.app",
   "https://osheen-oracle-dashboard.vercel.app",
@@ -306,6 +318,14 @@ app.use("/api/announcements", announcementRoutes);
 // Product Categories
 import productCategoryRoutes from "./routes/productCategoryRoutes.js";
 app.use("/api/product-categories", productCategoryRoutes);
+
+// Dashboard Stats
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+app.use("/api/admin/dashboard-stats", dashboardRoutes);
+
+// Admin User Management
+import userRoutes from "./routes/userRoutes.js";
+app.use("/api/admin/users", userRoutes);
 
 
 // ======================
