@@ -14,6 +14,15 @@ const router = express.Router();
 
 // Dynamic path detection for Hostinger
 const getUploadPath = () => {
+  // If on Windows (local dev), bypass Hostinger production paths to avoid drive root directory mapping issues
+  if (process.platform === "win32") {
+    const localPath = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(localPath)) {
+      fs.mkdirSync(localPath, { recursive: true });
+    }
+    return localPath;
+  }
+
   // For Hostinger production
   if (process.env.NODE_ENV === "production") {
     // Hostinger public_html or root path

@@ -47,6 +47,10 @@ export const register = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
+    // Generate 6-digit OTP for non-admin users
+    const otp = isVerified ? undefined : Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpire = isVerified ? undefined : Date.now() + 10 * 60 * 1000; // 10 minutes
+
     user = await User.create({
       name,
       email,
@@ -54,10 +58,34 @@ export const register = async (req, res) => {
       type: userType,
       loginMethod: "email",
       isVerified: isVerified,
+      otp,
+      otpExpire,
     });
 
+    if (!isVerified) {
+      try {
+        await sendEmail({
+          email,
+          name: name || "",
+          subject: "Verify your email - Osheen Oracle",
+          message: `Your verification OTP is ${otp}. It will expire in 10 minutes.`,
+          templateId: "otp_template_34",
+          variables: {
+            otp,
+            company_name: "Osheen Oracle",
+            name: name || "User",
+          }
+        });
+      } catch (err) {
+        console.error("Error sending register verification email:", err);
+      }
+    }
+
     res.json({
-      message: "Registration successful",
+      message: isVerified
+        ? "Registration successful"
+        : "Registration successful. Please verify your email using the OTP sent.",
+      requiresOtp: !isVerified,
       user: {
         id: user._id,
         name: user.name,
@@ -97,6 +125,39 @@ export const login = async (req, res) => {
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Invalid password" });
+
+    // Check if user is verified
+    if (!user.isVerified) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+      
+      user.otp = otp;
+      user.otpExpire = otpExpire;
+      await user.save();
+
+      try {
+        await sendEmail({
+          email: user.email,
+          name: user.name || "",
+          subject: "Verify your email - Osheen Oracle",
+          message: `Your verification OTP is ${otp}. It will expire in 10 minutes.`,
+          templateId: "otp_template_34",
+          variables: {
+            otp,
+            company_name: "Osheen Oracle",
+            name: user.name || "User",
+          }
+        });
+      } catch (err) {
+        console.error("Error sending login verification email:", err);
+      }
+
+      return res.status(403).json({
+        message: "Your email is not verified. An OTP has been sent to your email.",
+        requiresOtp: true,
+        email: user.email,
+      });
+    }
 
     // Generate token with user type included
     const token = jwt.sign(
@@ -253,34 +314,29 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
-
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     await user.save();
-
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
     await sendEmail({
       email,
       name: user.name || "",
-      subject: "Reset Password",
-      message: `
-        You requested a password reset.
-        Click this link to reset your password: ${resetUrl}
-        This link expires in 15 minutes.
-      `,
+      subject: "Reset Password OTP - Osheen Oracle",
+      message: `Your password reset OTP is ${otp}. It will expire in 10 minutes.`,
+      templateId: "otp_template_34",
       variables: {
-        reset_url: resetUrl,
-        resetUrl: resetUrl,
+        otp,
+        company_name: "Osheen Oracle",
         name: user.name || "User",
       }
     });
 
     res.json({
       success: true,
-      message: "Password reset link sent to email",
+      requiresOtp: true,
+      message: "Password reset OTP sent to email",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -553,5 +609,177 @@ export const updateProfileImage = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// ---------------- VERIFY OTP ------------------
+export const verifyOtp = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      email: Joi.string().email().required(),
+      otp: Joi.string().length(6).required(),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+      return res.json({ success: true, verified: true, message: "Email is already verified" });
+    }
+
+    if (!user.otp || user.otp !== otp || user.otpExpire < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpire = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      verified: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ---------------- RESEND OTP ------------------
+export const resendOtp = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      email: Joi.string().email().required(),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpire = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendEmail({
+      email,
+      name: user.name || "",
+      subject: "Verify your email - Osheen Oracle",
+      message: `Your verification OTP is ${otp}. It will expire in 10 minutes.`,
+      templateId: "otp_template_34",
+      variables: {
+        otp,
+        company_name: "Osheen Oracle",
+        name: user.name || "User",
+      }
+    });
+
+    res.json({
+      success: true,
+      message: "Verification OTP resent successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ---------------- VERIFY RESET OTP ------------------
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      email: Joi.string().email().required(),
+      otp: Joi.string().length(6).required(),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (
+      !user.resetPasswordOtp ||
+      user.resetPasswordOtp !== otp ||
+      user.resetPasswordOtpExpire < Date.now()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Generate temporary token for reset-password
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    
+    // Clear the reset OTP
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpire = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      verified: true,
+      resetToken,
+      message: "Reset OTP verified successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ---------------- RESEND RESET OTP ------------------
+export const resendResetOtp = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      email: Joi.string().email().required(),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendEmail({
+      email,
+      name: user.name || "",
+      subject: "Reset Password OTP - Osheen Oracle",
+      message: `Your password reset OTP is ${otp}. It will expire in 10 minutes.`,
+      templateId: "otp_template_34",
+      variables: {
+        otp,
+        company_name: "Osheen Oracle",
+        name: user.name || "User",
+      }
+    });
+
+    res.json({
+      success: true,
+      message: "Password reset OTP resent successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

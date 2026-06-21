@@ -65,6 +65,10 @@ const userSchema = new mongoose.Schema(
     // Password reset fields
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    otp: String,
+    otpExpire: Date,
+    resetPasswordOtp: String,
+    resetPasswordOtpExpire: Date,
 
     // Addresses
     addresses: [addressSchema],

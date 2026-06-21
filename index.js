@@ -163,6 +163,34 @@ app.use(cookieParser());
 // UPLOADS DIRECTORY SETUP (IMPORTANT FOR HOSTINGER)
 // ======================
 const setupUploadsDirectory = () => {
+  // If on Windows (local dev), bypass Hostinger production paths to avoid directory mapping issues
+  if (process.platform === "win32") {
+    const dirPath = path.join(__dirname, "public", "uploads");
+    try {
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        console.log(`✅ Created uploads directory: ${dirPath}`);
+      } else {
+        console.log(`✅ Uploads directory exists: ${dirPath}`);
+      }
+
+      // Create subdirectories
+      const imagesDir = path.join(dirPath, "images");
+      const videosDir = path.join(dirPath, "videos");
+      const documentsDir = path.join(dirPath, "documents");
+
+      [imagesDir, videosDir, documentsDir].forEach((subDir) => {
+        if (!fs.existsSync(subDir)) {
+          fs.mkdirSync(subDir, { recursive: true });
+        }
+      });
+
+      return dirPath;
+    } catch (err) {
+      console.log(`Cannot create/access Windows upload directory:`, err.message);
+    }
+  }
+
   // Try multiple possible paths for Hostinger
   const possiblePaths = [
     path.join(__dirname, "uploads"),

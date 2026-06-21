@@ -10,6 +10,10 @@ import {
   updateProfile,
   changePassword,
   updateProfileImage,
+  verifyOtp,
+  resendOtp,
+  verifyResetOtp,
+  resendResetOtp,
 } from "../controllers/authControllers.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import multer from "multer";
@@ -101,6 +105,10 @@ router.post("/google", googleLogin);
 router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+router.post("/verify-otp", verifyOtp);
+router.post("/resend-otp", resendOtp);
+router.post("/verify-reset-otp", verifyResetOtp);
+router.post("/resend-reset-otp", resendResetOtp);
 
 // Protected routes (require authentication)
 router.get("/profile", protect, profile);
