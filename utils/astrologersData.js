@@ -14,7 +14,7 @@ export const astrologers = [
     ],
     languages: ["Hindi", "English", "Punjabi"],
     image: "/astrologers/priya-sharma.jpg",
-    whatsappNumber: "+919876543210",
+    whatsappNumber: "918146668328",
     about:
       "Renowned Vedic astrologer with 12+ years of experience in helping people find their true path through ancient astrological principles. Specialized in career guidance and relationship compatibility.",
     successRate: "95%",
@@ -44,7 +44,7 @@ export const astrologers = [
     ],
     languages: ["Hindi", "Tamil", "English", "Telugu"],
     image: "/astrologers/rajesh-kumar.jpg",
-    whatsappNumber: "+919876543211",
+    whatsappNumber: "918146668328",
     about:
       "Expert in numerology and KP astrology system, specializing in accurate predictions and practical solutions for life challenges. Known for precise business and marriage predictions.",
     successRate: "92%",
@@ -69,7 +69,7 @@ export const astrologers = [
     ],
     languages: ["English", "Marathi", "Hindi", "Gujarati"],
     image: "/astrologers/anita-desai.jpg",
-    whatsappNumber: "+919876543212",
+    whatsappNumber: "918146668328",
     about:
       "Combining tarot wisdom with crystal healing to provide holistic guidance and transformative solutions for modern life challenges. Special focus on spiritual and personal growth.",
     successRate: "90%",
@@ -94,7 +94,7 @@ export const astrologers = [
     ],
     languages: ["Hindi", "English", "Sanskrit"],
     image: "/astrologers/vikram-singh.jpg",
-    whatsappNumber: "+919876543213",
+    whatsappNumber: "918146668328",
     about:
       "Doctorate in Vedic astrology with specialization in medical astrology and Prashna. Known for accurate health predictions and effective remedial solutions.",
     successRate: "96%",
@@ -119,7 +119,7 @@ export const astrologers = [
     ],
     languages: ["Hindi", "English", "Gujarati", "Marathi"],
     image: "/astrologers/meera-patel.jpg",
-    whatsappNumber: "+919876543214",
+    whatsappNumber: "918146668328",
     about:
       "Specialized in love and relationship astrology with proven track record of helping thousands find love and resolve relationship issues. Compassionate and understanding approach.",
     successRate: "94%",
@@ -149,7 +149,7 @@ export const astrologers = [
     ],
     languages: ["Hindi", "English", "Bengali"],
     image: "/astrologers/arjun-mehta.jpg",
-    whatsappNumber: "+919876543215",
+    whatsappNumber: "918146668328",
     about:
       "Young and dynamic astrologer specializing in career and business predictions. Known for practical advice and modern approach to traditional astrology.",
     successRate: "91%",
