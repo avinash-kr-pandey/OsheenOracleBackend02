@@ -381,22 +381,124 @@ export const getAllContent = async (req, res) => {
   try {
     console.log("🚀 Fetching all dynamic content...");
 
-    // const [plans, benefits, testimonials, addOns, stats] = await Promise.all([
-    //   MembershipPlan.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-    //   Benefit.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-    //   Testimonial.find({ isActive: true })
-    //     .sort({ order: 1, createdAt: -1 })
-    //     .limit(6),
-    //   AddOn.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-    //   Stat.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
-    // ]);
-    const [plans, benefits, testimonials, addOns, stats] = await Promise.all([
-      MembershipPlan.find({}).sort({ order: 1, createdAt: -1 }),
-      Benefit.find({}).sort({ order: 1, createdAt: -1 }),
-      Testimonial.find({}).sort({ order: 1, createdAt: -1 }).limit(6),
-      AddOn.find({}).sort({ order: 1, createdAt: -1 }),
-      Stat.find({}).sort({ order: 1, createdAt: -1 }),
-    ]);
+    let plans = await MembershipPlan.find({}).sort({ order: 1, createdAt: -1 });
+    let benefits = await Benefit.find({}).sort({ order: 1, createdAt: -1 });
+    let testimonials = await Testimonial.find({}).sort({ order: 1, createdAt: -1 }).limit(6);
+    let addOns = await AddOn.find({}).sort({ order: 1, createdAt: -1 });
+    let stats = await Stat.find({}).sort({ order: 1, createdAt: -1 });
+
+    // Auto-seed if plans are empty
+    if (!plans || plans.length === 0) {
+      console.log("Seeding default membership plans...");
+      const defaultPlans = [
+        {
+          id: "rose-quartz",
+          name: "Rose Quartz Aura",
+          price: "₹1,100",
+          period: "month",
+          features: [
+            "Access to community circles",
+            "Monthly group energy tuning",
+            "Daily spiritual affirmations",
+            "10% discount on 1-on-1 sessions",
+          ],
+          popular: false,
+          isActive: true,
+          order: 1,
+        },
+        {
+          id: "golden-aura",
+          name: "Golden Bloom Aura",
+          price: "₹3,100",
+          period: "month",
+          features: [
+            "1 Monthly 1-on-1 Tarot Reading (30 mins)",
+            "Access to private community group",
+            "Bi-weekly live energy healing circles",
+            "Priority slot booking for sessions",
+          ],
+          popular: true,
+          isActive: true,
+          order: 2,
+        },
+        {
+          id: "diamond-bliss",
+          name: "Diamond Bliss Aura",
+          price: "₹7,500",
+          period: "month",
+          features: [
+            "2 Monthly 1-on-1 Tarot & Healing sessions",
+            "Unlimited WhatsApp text guidance",
+            "Personalized monthly manifestation ritual",
+            "Exclusive access to workshops & courses",
+          ],
+          popular: false,
+          isActive: true,
+          order: 3,
+        },
+        {
+          id: "cosmic-light",
+          name: "Cosmic Light Aura",
+          price: "₹15,000",
+          period: "month",
+          features: [
+            "Weekly 1-on-1 personal mentoring sessions",
+            "Direct call access for urgent spiritual queries",
+            "Custom-crafted energy grid for your home",
+            "VIP invitations to offline retreats",
+          ],
+          popular: false,
+          isActive: true,
+          order: 4,
+        },
+      ];
+      await MembershipPlan.insertMany(defaultPlans);
+      plans = await MembershipPlan.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    if (!benefits || benefits.length === 0) {
+      console.log("Seeding default benefits...");
+      const defaultBenefits = [
+        { icon: "🔮", title: "Spiritual Guidance", description: "Personalized tarot readings and spiritual insights.", isActive: true, order: 1 },
+        { icon: "✨", title: "Energy Healing", description: "Reiki, Chakra, and Angel healing sessions.", isActive: true, order: 2 },
+        { icon: "📿", title: "Sacred Rituals", description: "Monthly rituals for manifestation and protection.", isActive: true, order: 3 },
+      ];
+      await Benefit.insertMany(defaultBenefits);
+      benefits = await Benefit.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    if (!testimonials || testimonials.length === 0) {
+      console.log("Seeding default testimonials...");
+      const defaultTestimonials = [
+        { avatar: "🔮", comment: "Osheen's guidance transformed my life. The energies feel so much lighter and positive now.", name: "Priya Sharma", zodiac: "Basic Aura Member", role: "Member", rating: 5, isActive: true, order: 1 },
+        { avatar: "💖", comment: "The tarot insights helped me make crucial decisions in my career and relationship.", name: "Rahul Verma", zodiac: "Tarot Insight Member", role: "Member", rating: 5, isActive: true, order: 2 },
+        { avatar: "🌟", comment: "I manifested my dream job within 3 months of joining! The ritual worksheets are magical.", name: "Anita Patel", zodiac: "Premium Member", role: "Member", rating: 5, isActive: true, order: 3 },
+      ];
+      await Testimonial.insertMany(defaultTestimonials);
+      testimonials = await Testimonial.find({}).sort({ order: 1, createdAt: -1 }).limit(6);
+    }
+
+    if (!addOns || addOns.length === 0) {
+      console.log("Seeding default add-ons...");
+      const defaultAddOns = [
+        { service: "Extra Tarot Session", price: "₹2,100", description: "30-minute deep dive tarot guidance", isActive: true, order: 1 },
+        { service: "Extra Healing Session", price: "₹5,100", description: "60-minute remote reiki & sound healing", isActive: true, order: 2 },
+      ];
+      await AddOn.insertMany(defaultAddOns);
+      addOns = await AddOn.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    if (!stats || stats.length === 0) {
+      console.log("Seeding default stats...");
+      const defaultStats = [
+        { number: "5,000+", label: "Spiritual Seekers", isActive: true, order: 1 },
+        { number: "98%", label: "Client Satisfaction", isActive: true, order: 2 },
+        { number: "10+", label: "Years Experience", isActive: true, order: 3 },
+        { number: "24/7", label: "Energy Support", isActive: true, order: 4 },
+      ];
+      await Stat.insertMany(defaultStats);
+      stats = await Stat.find({}).sort({ order: 1, createdAt: -1 });
+    }
 
     console.log("✅ Data fetched:", {
       plans: plans.length,
