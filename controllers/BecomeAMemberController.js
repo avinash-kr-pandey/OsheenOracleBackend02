@@ -491,10 +491,10 @@ export const getAllContent = async (req, res) => {
     if (!stats || stats.length === 0) {
       console.log("Seeding default stats...");
       const defaultStats = [
-        { number: "5,000+", label: "Spiritual Seekers", isActive: true, order: 1 },
-        { number: "98%", label: "Client Satisfaction", isActive: true, order: 2 },
-        { number: "10+", label: "Years Experience", isActive: true, order: 3 },
-        { number: "24/7", label: "Energy Support", isActive: true, order: 4 },
+        { number: "10+", label: "Years of Experience", isActive: true, order: 1 },
+        { number: "5000+", label: "Happy Lives", isActive: true, order: 2 },
+        { number: "1000+", label: "Kundli Analysis Completed", isActive: true, order: 3 },
+        { number: "95%", label: "Client Satisfaction Rate", isActive: true, order: 4 },
       ];
       await Stat.insertMany(defaultStats);
       stats = await Stat.find({}).sort({ order: 1, createdAt: -1 });
