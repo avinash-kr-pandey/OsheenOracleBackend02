@@ -27,7 +27,9 @@ export const register = async (req, res) => {
 
     // Check if user already exists
     let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: "User already exists" });
+    if (user && user.isVerified) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
     // Determine user type with admin secret validation
     let userType = "user";
@@ -51,16 +53,27 @@ export const register = async (req, res) => {
     const otp = isVerified ? undefined : Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpire = isVerified ? undefined : Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    user = await User.create({
-      name,
-      email,
-      password: hashed,
-      type: userType,
-      loginMethod: "email",
-      isVerified: isVerified,
-      otp,
-      otpExpire,
-    });
+    if (user) {
+      // Overwrite/update existing unverified user
+      user.name = name;
+      user.password = hashed;
+      user.type = userType;
+      user.otp = otp;
+      user.otpExpire = otpExpire;
+      await user.save();
+    } else {
+      // Create new user
+      user = await User.create({
+        name,
+        email,
+        password: hashed,
+        type: userType,
+        loginMethod: "email",
+        isVerified: isVerified,
+        otp,
+        otpExpire,
+      });
+    }
 
     if (!isVerified) {
       try {
@@ -78,6 +91,15 @@ export const register = async (req, res) => {
         });
       } catch (err) {
         console.error("Error sending register verification email:", err);
+        // Delete the created or updated user document to avoid stuck unverified states
+        try {
+          await User.deleteOne({ _id: user._id });
+        } catch (delErr) {
+          console.error("Failed to clean up user record on verification email failure:", delErr);
+        }
+        return res.status(500).json({
+          message: "Failed to send verification email. Please try again.",
+        });
       }
     }
 
