@@ -118,7 +118,7 @@ export const updateProduct = async (req, res) => {
 // Admin-only: Add a review to a product
 export const addReview = async (req, res) => {
   try {
-    const { rating, comment } = req.body;
+    const { name, rating, comment } = req.body;
 
     if (!rating || rating < 1 || rating > 5)
       return res
@@ -132,7 +132,8 @@ export const addReview = async (req, res) => {
         .json({ success: false, message: "Product not found" });
 
     const review = {
-      admin: req.user.id,
+      admin: req.user ? req.user.id : null,
+      name: name || (req.user ? req.user.name : "Anonymous"),
       rating,
       comment,
     };

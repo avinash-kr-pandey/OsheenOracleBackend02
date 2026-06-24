@@ -58,15 +58,25 @@ export const createMembershipApplication = async (req, res) => {
       phone,
       countryCode,
       plan,
-      newsletter: newsletter || true,
+      newsletter: newsletter !== undefined ? newsletter : true,
     });
 
-    await application.save();
+    if (req.body.status) {
+      application.status = req.body.status;
+    }
+
+    if (req.body.status === "active") {
+      await application.activateSubscription();
+    } else {
+      await application.save();
+    }
 
     res.status(201).json({
       success: true,
       message:
-        "Membership application submitted successfully! Our team will contact you shortly.",
+        application.status === "active"
+          ? "Your subscription is now active! Welcome to the sacred community."
+          : "Membership application submitted successfully! Our team will contact you shortly.",
       data: {
         id: application._id,
         name: application.name,
