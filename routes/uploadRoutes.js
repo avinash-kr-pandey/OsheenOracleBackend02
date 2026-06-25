@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { uploadFile } from "../controllers/uploadController.js";
 import { fileURLToPath } from "url";
 import { protect } from "../middlewares/authMiddleware.js";
@@ -16,7 +17,7 @@ const router = express.Router();
 const getUploadPath = () => {
   // If on Windows (local dev), bypass Hostinger production paths to avoid drive root directory mapping issues
   if (process.platform === "win32") {
-    const localPath = path.join(process.cwd(), "public", "uploads");
+    const localPath = path.join(__dirname, "..", "public", "uploads");
     if (!fs.existsSync(localPath)) {
       fs.mkdirSync(localPath, { recursive: true });
     }
@@ -25,12 +26,13 @@ const getUploadPath = () => {
 
   // For Hostinger production
   if (process.env.NODE_ENV === "production") {
+    const homedir = os.homedir();
     // Hostinger public_html or root path
     const possiblePaths = [
-      "/home/u123456789/public_html/uploads",
-      "/home/u123456789/domains/yourdomain.com/public_html/uploads",
-      path.join(process.cwd(), "public", "uploads"),
-      path.join(process.cwd(), "uploads"),
+      path.join(homedir, "public_html", "uploads"),
+      path.join(homedir, "domains", "yourdomain.com", "public_html", "uploads"),
+      path.join(__dirname, "..", "public", "uploads"),
+      path.join(__dirname, "..", "uploads"),
     ];
 
     for (const dirPath of possiblePaths) {
@@ -46,7 +48,7 @@ const getUploadPath = () => {
   }
 
   // Development fallback
-  return path.join(process.cwd(), "public", "uploads");
+  return path.join(__dirname, "..", "public", "uploads");
 };
 
 const baseUploadPath = getUploadPath();

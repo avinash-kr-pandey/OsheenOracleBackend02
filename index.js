@@ -30,22 +30,21 @@ import path from "path";
 import { fileURLToPath } from "url";
 import becomeAMemberRoutes from "./routes/becomeamemberRoutes.js";
 import fs from "fs";
-
-// ✅ Import service routes
-import serviceRoutes from "./routes/serviceRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
-// ✅ Load environment variables FIRST
-
-// Contact
-
-import contactRoutes from "./routes/contactRoutes.js"
-
-
-dotenv.config();
+import os from "os";
 
 // Get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ✅ Load environment variables FIRST from absolute path
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+// ✅ Import service routes
+import serviceRoutes from "./routes/serviceRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+
+// Contact
+import contactRoutes from "./routes/contactRoutes.js";
 
 const app = express();
 
@@ -204,9 +203,10 @@ const setupUploadsDirectory = () => {
   }
 
   // Try multiple possible paths for Hostinger
+  const homedir = os.homedir();
   const possiblePaths = [
-    "/home/u123456789/public_html/uploads",
-    "/home/u123456789/domains/yourdomain.com/public_html/uploads",
+    path.join(homedir, "public_html", "uploads"),
+    path.join(homedir, "domains", "yourdomain.com", "public_html", "uploads"),
     path.join(__dirname, "uploads"),
     path.join(__dirname, "public", "uploads"),
     "/var/www/uploads",
@@ -265,8 +265,9 @@ if (fs.existsSync("/var/www/uploads")) {
 }
 
 // Serve from Hostinger custom path if exists
-if (fs.existsSync("/home/u123456789/public_html/uploads")) {
-  app.use("/uploads", express.static("/home/u123456789/public_html/uploads"));
+const hostingerUploads = path.join(os.homedir(), "public_html", "uploads");
+if (fs.existsSync(hostingerUploads)) {
+  app.use("/uploads", express.static(hostingerUploads));
 }
 
 // ======================

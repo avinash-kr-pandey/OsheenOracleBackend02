@@ -149,7 +149,7 @@ router.get("/:id", getProduct);
  *       201:
  *         description: Review added
  */
-router.post("/:id/reviews", protect, isAdmin, addReview);
+router.post("/:id/reviews", protect, addReview);
 
 /**
  * @swagger
