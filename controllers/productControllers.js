@@ -100,6 +100,17 @@ export const updateProduct = async (req, res) => {
         });
     }
 
+    // Recalculate averageRating and reviewCount if reviews are being updated in req.body
+    if (req.body.reviews && Array.isArray(req.body.reviews)) {
+      req.body.reviewCount = req.body.reviews.length;
+      if (req.body.reviews.length > 0) {
+        const total = req.body.reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
+        req.body.averageRating = total / req.body.reviews.length;
+      } else {
+        req.body.averageRating = 0;
+      }
+    }
+
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });

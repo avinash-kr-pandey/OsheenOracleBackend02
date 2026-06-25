@@ -3,10 +3,11 @@ import Order from "../models/order.js";
 // CREATE ORDER
 export const createOrder = async (req, res) => {
   try {
-    const { productName, price, status, image } = req.body;
+    const { productId, productName, price, status, image } = req.body;
 
     const newOrder = await Order.create({
       user: req.user._id,
+      productId,
       productName,
       price,
       status,
