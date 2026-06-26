@@ -114,7 +114,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for Hostinger
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
 });
 
 // Upload endpoint (Admin only)
