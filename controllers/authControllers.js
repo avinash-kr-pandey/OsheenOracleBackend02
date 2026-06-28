@@ -394,6 +394,7 @@ export const resetPassword = async (req, res) => {
     user.password = await bcrypt.hash(req.body.password, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    user.loginMethod = "email"; // Support login with the new email/password
 
     await user.save();
 

@@ -46,7 +46,11 @@ export const updateAbout = async (req, res) => {
 
     await about.save();
 
-    return res.json({ success: true, message: "About Page data updated successfully" });
+    return res.json({
+      success: true,
+      message: "About Page data updated successfully",
+      data: about,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
