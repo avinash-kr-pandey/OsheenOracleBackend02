@@ -501,15 +501,48 @@ export const deleteMediaSpotlight = async (req, res) => {
 // ============ CATALOGUE CONTROLLERS ============
 export const addCatalogue = async (req, res) => {
   try {
-    const { title, description, details, order } = req.body;
+    const {
+      name,
+      price,
+      rating,
+      date,
+      description,
+      traits,
+      element,
+      planet,
+      symbol,
+      luckyColor,
+      luckyNumber,
+      compatibility,
+      benefits,
+      readingIncludes,
+      strengths,
+      challenges,
+      order,
+      isActive,
+    } = req.body;
+    
     const homeData = await Home.getHomeData();
 
     const newCatalogue = {
-      title,
+      name: name || "",
+      price: price || "0",
+      rating: rating || 4.5,
+      date: date || "",
       description: description || "",
-      details: details ? JSON.parse(details) : {},
+      traits: Array.isArray(traits) ? traits : (typeof traits === "string" ? JSON.parse(traits) : []),
+      element: element || "",
+      planet: planet || "",
+      symbol: symbol || "",
+      luckyColor: luckyColor || "",
+      luckyNumber: luckyNumber || 0,
+      compatibility: Array.isArray(compatibility) ? compatibility : (typeof compatibility === "string" ? JSON.parse(compatibility) : []),
+      benefits: Array.isArray(benefits) ? benefits : (typeof benefits === "string" ? JSON.parse(benefits) : []),
+      readingIncludes: Array.isArray(readingIncludes) ? readingIncludes : (typeof readingIncludes === "string" ? JSON.parse(readingIncludes) : []),
+      strengths: Array.isArray(strengths) ? strengths : (typeof strengths === "string" ? JSON.parse(strengths) : []),
+      challenges: Array.isArray(challenges) ? challenges : (typeof challenges === "string" ? JSON.parse(challenges) : []),
       order: order || homeData.catalogue.length,
-      isActive: true,
+      isActive: isActive !== false,
     };
 
     homeData.catalogue.push(newCatalogue);
@@ -541,17 +574,43 @@ export const updateCatalogue = async (req, res) => {
         .json({ success: false, message: "Catalogue not found" });
     }
 
-    if (updates.details) {
-      updates.details =
-        typeof updates.details === "string"
-          ? JSON.parse(updates.details)
-          : updates.details;
-    }
+    const fieldsToUpdate = [
+      "name",
+      "price",
+      "rating",
+      "date",
+      "description",
+      "traits",
+      "element",
+      "planet",
+      "symbol",
+      "luckyColor",
+      "luckyNumber",
+      "compatibility",
+      "benefits",
+      "readingIncludes",
+      "strengths",
+      "challenges",
+      "order",
+      "isActive",
+    ];
 
-    homeData.catalogue[index] = {
-      ...homeData.catalogue[index].toObject(),
-      ...updates,
-    };
+    fieldsToUpdate.forEach((field) => {
+      if (updates[field] !== undefined) {
+        if (Array.isArray(updates[field])) {
+          homeData.catalogue[index][field] = updates[field];
+        } else if (typeof updates[field] === "string" && ["traits", "compatibility", "benefits", "readingIncludes", "strengths", "challenges"].includes(field)) {
+          try {
+            homeData.catalogue[index][field] = JSON.parse(updates[field]);
+          } catch (e) {
+            homeData.catalogue[index][field] = [updates[field]];
+          }
+        } else {
+          homeData.catalogue[index][field] = updates[field];
+        }
+      }
+    });
+
     await homeData.save();
 
     res.status(200).json({

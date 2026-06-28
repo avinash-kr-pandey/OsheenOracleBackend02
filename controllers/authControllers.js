@@ -383,6 +383,9 @@ export const resetPassword = async (req, res) => {
 
     const schema = Joi.object({
       password: Joi.string().min(6).required(),
+      email: Joi.string().email().optional(),
+      otp: Joi.string().optional(),
+      otpId: Joi.string().optional(),
     });
 
     const { error } = schema.validate(req.body);

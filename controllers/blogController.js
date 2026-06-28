@@ -287,7 +287,7 @@ export const addBlogComment = async (req, res) => {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       comment: comment.trim(),
-      isApproved: false,
+      isApproved: true,
     });
 
     blog.comments += 1;
@@ -296,7 +296,7 @@ export const addBlogComment = async (req, res) => {
     res.status(201).json({
       success: true,
       message:
-        "Comment submitted successfully! It will appear after admin approval.",
+        "Comment submitted successfully!",
       data: newComment,
     });
   } catch (error) {
