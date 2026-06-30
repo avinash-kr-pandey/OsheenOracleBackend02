@@ -7,6 +7,7 @@ export const protect = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
+      console.log("❌ Auth failed: No token provided in headers. Authorization:", req.headers.authorization);
       return res.status(401).json({
         success: false,
         message: "Not authorized, no token provided",
@@ -18,6 +19,7 @@ export const protect = async (req, res, next) => {
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
+      console.log("❌ Auth failed: JWT verification error:", error.message, "Token:", token.substring(0, 15) + "...");
       if (error.name === "TokenExpiredError") {
         return res.status(401).json({
           success: false,
@@ -39,6 +41,7 @@ export const protect = async (req, res, next) => {
     );
 
     if (!user) {
+      console.log("❌ Auth failed: User not found in database for ID:", decoded.id);
       return res.status(401).json({
         success: false,
         message: "User no longer exists",
