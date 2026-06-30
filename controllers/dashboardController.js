@@ -25,35 +25,8 @@ export const getDashboardStats = async (req, res) => {
       };
     });
 
-    // Generate mock orders dynamically based on the actual products in the database
-    // so that the dashboard represents real products, categories, and prices of the website
+    // Use real database orders only
     let ordersToUse = [...orders];
-    if (ordersToUse.length === 0 && dbProducts.length > 0) {
-      const mockCustomers = [
-        "Rajesh Kumar", "Pooja Sharma", "Amit Patel", "Siddharth Singh", 
-        "Anjali Gupta", "Vikram Rathore", "Priya Singh", "Karan Johar", 
-        "Sneha Patel", "Deepak Verma", "Rohan Mehta", "Neha Sen"
-      ];
-      const statuses = ["Pending", "Shipped", "Delivered", "Cancelled"];
-      
-      for (let i = 0; i < 40; i++) {
-        const product = dbProducts[i % dbProducts.length];
-        const date = new Date();
-        // Span orders over the last 6 months
-        date.setMonth(date.getMonth() - (i % 6));
-        date.setDate(date.getDate() - (i * 7) % 28);
-        
-        ordersToUse.push({
-          _id: `mock_order_${1000 + i}`,
-          customerName: mockCustomers[i % mockCustomers.length],
-          productName: product.name,
-          price: product.price || 200,
-          status: statuses[i % statuses.length],
-          createdAt: date,
-          updatedAt: date
-        });
-      }
-    }
 
     // 2. Calculate Customer Satisfaction from Testimonials
     let customerSatisfaction = 4.8;
@@ -126,15 +99,7 @@ export const getDashboardStats = async (req, res) => {
         date: o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       }));
     } else {
-      // Use seeded mock orders (based on actual products)
-      recentOrders = ordersToUse.slice(0, 7).map(o => ({
-        id: o._id,
-        customerName: o.customerName,
-        product: o.productName,
-        amount: o.price,
-        status: o.status ? (o.status.toLowerCase() === 'delivered' ? 'completed' : o.status.toLowerCase()) : "pending",
-        date: o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      }));
+      recentOrders = [];
     }
 
     // 7. Sales Over Time (Monthly - Last 6 Months)
