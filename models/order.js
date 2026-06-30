@@ -16,8 +16,16 @@ const orderSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
+      enum: ["Pending", "Packed", "Shipped", "Reached", "Cancelled"],
       default: "Pending",
+      set: function (val) {
+        if (typeof val !== "string") return val;
+        const trimmed = val.trim();
+        const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+        if (normalized === "Delivered") return "Reached";
+        if (normalized === "Processing") return "Packed";
+        return normalized;
+      },
     },
     image: { type: String },
 
