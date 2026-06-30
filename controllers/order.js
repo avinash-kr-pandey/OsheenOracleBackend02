@@ -3,15 +3,33 @@ import Order from "../models/order.js";
 // CREATE ORDER
 export const createOrder = async (req, res) => {
   try {
-    const { productId, productName, price, status, image } = req.body;
+    const { 
+      productId, 
+      productName, 
+      price, 
+      quantity,
+      totalAmount,
+      status, 
+      image,
+      shippingAddress,
+      phone,
+      paymentMethod,
+      paymentId
+    } = req.body;
 
     const newOrder = await Order.create({
       user: req.user._id,
       productId,
       productName,
       price,
-      status,
+      quantity: quantity || 1,
+      totalAmount: totalAmount || (price * (quantity || 1)),
+      status: status || "Pending",
       image,
+      shippingAddress,
+      phone,
+      paymentMethod,
+      paymentId
     });
 
     res.status(201).json({

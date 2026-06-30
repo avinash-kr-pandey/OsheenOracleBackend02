@@ -14,6 +14,8 @@ const orderSchema = new mongoose.Schema(
       ref: "Product",
     },
     price: { type: Number, required: true },
+    quantity: { type: Number, default: 1 },
+    totalAmount: { type: Number },
     status: {
       type: String,
       enum: ["Pending", "Packed", "Shipped", "Reached", "Cancelled"],
@@ -28,6 +30,14 @@ const orderSchema = new mongoose.Schema(
       },
     },
     image: { type: String },
+    shippingAddress: {
+      name: String,
+      phone: String,
+      address: String,
+    },
+    phone: { type: String },
+    paymentMethod: { type: String, default: "Razorpay" },
+    paymentId: { type: String },
 
     date: { type: Date, default: Date.now },
   },
