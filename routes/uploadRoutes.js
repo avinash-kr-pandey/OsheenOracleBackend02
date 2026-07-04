@@ -33,6 +33,8 @@ const getUploadPath = () => {
       path.join(homedir, "domains", "yourdomain.com", "public_html", "uploads"),
       path.join(__dirname, "..", "public", "uploads"),
       path.join(__dirname, "..", "uploads"),
+      path.join(process.cwd(), "public", "uploads"),
+      path.join(process.cwd(), "uploads"),
     ];
 
     for (const dirPath of possiblePaths) {
@@ -40,15 +42,24 @@ const getUploadPath = () => {
         if (!fs.existsSync(dirPath)) {
           fs.mkdirSync(dirPath, { recursive: true });
         }
+        // Try writing a small test file to verify write access
+        const testFile = path.join(dirPath, ".write-test");
+        fs.writeFileSync(testFile, "test");
+        fs.unlinkSync(testFile);
+        console.log(`Successfully verified write permissions on: ${dirPath}`);
         return dirPath;
       } catch (err) {
-        console.log(`Cannot create ${dirPath}:`, err.message);
+        console.log(`Cannot write or access ${dirPath}:`, err.message);
       }
     }
   }
 
   // Development fallback
-  return path.join(__dirname, "..", "public", "uploads");
+  const fallbackPath = path.join(__dirname, "..", "public", "uploads");
+  if (!fs.existsSync(fallbackPath)) {
+    fs.mkdirSync(fallbackPath, { recursive: true });
+  }
+  return fallbackPath;
 };
 
 const baseUploadPath = getUploadPath();
