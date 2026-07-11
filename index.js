@@ -128,6 +128,7 @@ const corsOptions = {
     }
     if (
       cleanedAllowedOrigins.indexOf(origin) !== -1 ||
+      origin.endsWith(".vercel.app") ||
       process.env.NODE_ENV !== "production"
     ) {
       console.log(`✅ CORS allowed for origin: ${origin}`);
