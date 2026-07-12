@@ -520,6 +520,7 @@ export const addCatalogue = async (req, res) => {
       challenges,
       order,
       isActive,
+      image,
     } = req.body;
     
     const homeData = await Home.getHomeData();
@@ -530,6 +531,7 @@ export const addCatalogue = async (req, res) => {
       rating: rating || 4.5,
       date: date || "",
       description: description || "",
+      image: image || "",
       traits: Array.isArray(traits) ? traits : (typeof traits === "string" ? JSON.parse(traits) : []),
       element: element || "",
       planet: planet || "",
@@ -580,6 +582,7 @@ export const updateCatalogue = async (req, res) => {
       "rating",
       "date",
       "description",
+      "image",
       "traits",
       "element",
       "planet",
