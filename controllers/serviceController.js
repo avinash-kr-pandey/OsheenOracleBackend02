@@ -453,7 +453,10 @@ export const getServiceRequests = async (req, res) => {
     const { status } = req.query;
 
     if (req.user.type !== "admin") {
-      filter.user = req.user._id;
+      filter.$or = [
+        { user: req.user._id },
+        { email: req.user.email }
+      ];
     }
 
     if (status) {
