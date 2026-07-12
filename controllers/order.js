@@ -80,7 +80,11 @@ export const updateOrderStatus = async (req, res) => {
     if (!order)
       return res.status(404).json({ success: false, message: "Order not found" });
 
-    order.status = req.body.status;
+    if (req.body.status !== undefined) order.status = req.body.status;
+    if (req.body.trackingId !== undefined) order.trackingId = req.body.trackingId;
+    if (req.body.carrier !== undefined) order.carrier = req.body.carrier;
+    if (req.body.deliveryDate !== undefined) order.deliveryDate = req.body.deliveryDate;
+
     await order.save();
 
     res.json({ success: true, message: "Order status updated", order });

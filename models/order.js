@@ -37,6 +37,9 @@ const orderSchema = new mongoose.Schema(
     phone: { type: String },
     paymentMethod: { type: String, default: "Razorpay" },
     paymentId: { type: String },
+    trackingId: { type: String, default: "" },
+    carrier: { type: String, default: "" },
+    deliveryDate: { type: String, default: "" },
 
     date: { type: Date, default: Date.now },
   },
