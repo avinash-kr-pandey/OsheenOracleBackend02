@@ -925,3 +925,27 @@ export const deleteStat = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// get user's own active/latest membership details
+export const getMyMembership = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ success: false, message: "Unauthorized. Email not found in request." });
+    }
+
+    const application = await BecomeAMember.findOne({
+      email: req.user.email.toLowerCase()
+    }).sort({ createdAt: -1 });
+
+    const plans = await MembershipPlan.find({ isActive: true });
+
+    res.status(200).json({
+      success: true,
+      data: application,
+      plans: plans
+    });
+  } catch (error) {
+    console.error("Error in getMyMembership:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

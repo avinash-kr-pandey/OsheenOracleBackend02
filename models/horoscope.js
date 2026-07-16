@@ -3,12 +3,12 @@ import mongoose from "mongoose";
 const horoscopeSchema = new mongoose.Schema(
   {
     // Rishi information
-    rishiName: { type: String, required: true },
-    rishiNameHindi: { type: String, required: true },
+    rishiName: { type: String, required: false },
+    rishiNameHindi: { type: String, required: false },
 
     // Zodiac information
     zodiacSign: { type: String, required: true },
-    zodiacSignHindi: { type: String, required: true },
+    zodiacSignHindi: { type: String, required: false },
 
     // Date for the prediction
     date: {
@@ -19,7 +19,7 @@ const horoscopeSchema = new mongoose.Schema(
 
     // Prediction content
     prediction: { type: String, required: true },
-    predictionHindi: { type: String, required: true },
+    predictionHindi: { type: String, required: false },
 
     // Time frame
     timeFrame: {

@@ -1,4 +1,5 @@
 import express from "express";
+import { protect } from "../middlewares/authMiddleware.js";
 import {
   createMembershipApplication,
   getAllApplications,
@@ -28,11 +29,14 @@ import {
   createStat,
   updateStat,
   deleteStat,
+  getMyMembership,
 } from "../controllers/BecomeAMemberController.js";
 
 const router = express.Router();
 
 // ==================== PUBLIC ROUTES ====================
+router.get("/my-membership", protect, getMyMembership);
+
 // TEMPORARY: Direct function call without any wrapper
 router.post("/apply", async (req, res) => {
   console.log("🔵 ROUTE: /apply hit");
