@@ -91,15 +91,12 @@ export const register = async (req, res) => {
         });
       } catch (err) {
         console.error("Error sending register verification email:", err);
-        // Delete the created or updated user document to avoid stuck unverified states
-        try {
-          await User.deleteOne({ _id: user._id });
-        } catch (delErr) {
-          console.error("Failed to clean up user record on verification email failure:", delErr);
-        }
-        return res.status(500).json({
-          message: "Failed to send verification email. Please try again.",
-        });
+        // Fallback: If verification email fails (e.g. MSG91 template/domain setup issues),
+        // we auto-verify the user so they are not locked out of the website during delivery.
+        console.log("⚠️ Auto-verifying user as fallback due to email delivery failure.");
+        user.isVerified = true;
+        await user.save();
+        isVerified = true;
       }
     }
 
@@ -157,6 +154,7 @@ export const login = async (req, res) => {
       user.otpExpire = otpExpire;
       await user.save();
 
+      let emailSent = false;
       try {
         await sendEmail({
           email: user.email,
@@ -170,15 +168,22 @@ export const login = async (req, res) => {
             name: user.name || "User",
           }
         });
+        emailSent = true;
       } catch (err) {
         console.error("Error sending login verification email:", err);
+        // Fallback: If verification email fails, auto-verify user to prevent deadlock lockout
+        console.log("⚠️ Auto-verifying user on login as fallback due to email delivery failure.");
+        user.isVerified = true;
+        await user.save();
       }
 
-      return res.status(403).json({
-        message: "Your email is not verified. An OTP has been sent to your email.",
-        requiresOtp: true,
-        email: user.email,
-      });
+      if (emailSent) {
+        return res.status(403).json({
+          message: "Your email is not verified. An OTP has been sent to your email.",
+          requiresOtp: true,
+          email: user.email,
+        });
+      }
     }
 
     // Generate token with user type included
