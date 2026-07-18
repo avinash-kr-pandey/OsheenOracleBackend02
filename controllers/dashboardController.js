@@ -168,10 +168,8 @@ export const getDashboardStats = async (req, res) => {
 
     if (productCategories.length === 0) {
       productCategories = [
-        { category: "Beauty", value: 35, color: "#8B5CF6" },
-        { category: "Common Product", value: 25, color: "#F59E0B" },
-        { category: "Books", value: 25, color: "#10B981" },
-        { category: "Bracelet", value: 15, color: "#3B82F6" }
+        { category: "Bracelet", value: 65, color: "#3B82F6" },
+        { category: "Jar", value: 35, color: "#10B981" }
       ];
     }
 
