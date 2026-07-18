@@ -131,48 +131,37 @@ export const getDashboardStats = async (req, res) => {
         month: name,
         sales: monthRevenue,
       });
-    }
+    }    // 8. Order Status Distribution (reusing productCategories key to avoid frontend TS type modifications)
+    const statusCountMap = {};
+    orders.forEach(o => {
+      const rawStatus = o.status ? o.status.trim() : "Pending";
+      const status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+      statusCountMap[status] = (statusCountMap[status] || 0) + 1;
+    });
 
-    // 8. Product Categories percentages
-    const categoryCountMap = {};
-    let matchedProductsCount = 0;
-
-    for (const o of validOrders) {
-      let category = "General";
-      const productInfo = dbProducts.find(p => p.name === o.productName);
-      if (productInfo && productInfo.category) {
-        category = productInfo.category;
-      }
-      categoryCountMap[category] = (categoryCountMap[category] || 0) + 1;
-      matchedProductsCount++;
-    }
-
-    const categoryColors = {
-      "Beauty": "#8B5CF6",
-      "Common Product": "#F59E0B",
-      "Books": "#10B981",
-      "Bracelet": "#3B82F6",
-      "Reports": "#8B5CF6",
-      "Jewelry": "#F59E0B",
-      "Divination Tools": "#10B981",
-      "Digital": "#3B82F6",
-      "Courses": "#EF4444",
+    const statusColors = {
+      "Completed": "#10B981", // green
+      "Delivered": "#10B981", // green
+      "Pending": "#F59E0B",   // amber
+      "Shipped": "#3B82F6",   // blue
+      "Cancelled": "#EF4444", // red
     };
 
-    const categoryKeys = Object.keys(categoryCountMap);
-    let productCategories = categoryKeys.map((category, idx) => ({
-      category,
-      value: matchedProductsCount > 0 ? Math.round((categoryCountMap[category] / matchedProductsCount) * 100) : 0,
-      color: categoryColors[category] || ["#8B5CF6", "#F59E0B", "#10B981", "#3B82F6", "#EF4444", "#EC4899"][idx % 6],
+    const statusKeys = Object.keys(statusCountMap);
+    const totalOrdersForStatus = orders.length || 1;
+    let productCategories = statusKeys.map((status, idx) => ({
+      category: status,
+      value: Math.round((statusCountMap[status] / totalOrdersForStatus) * 100),
+      color: statusColors[status] || ["#8B5CF6", "#EC4899", "#6B7280"][idx % 3],
     }));
 
     if (productCategories.length === 0) {
       productCategories = [
-        { category: "Bracelet", value: 65, color: "#3B82F6" },
-        { category: "Jar", value: 35, color: "#10B981" }
+        { category: "Completed", value: 70, color: "#10B981" },
+        { category: "Pending", value: 20, color: "#F59E0B" },
+        { category: "Shipped", value: 10, color: "#3B82F6" }
       ];
     }
-
     // 9. Service requests performance grouping (from ServiceRequests)
     const serviceBookingsMap = {};
     validRequests.forEach(r => {
