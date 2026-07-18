@@ -36,7 +36,7 @@ export const getDashboardStats = async (req, res) => {
     }
 
     // 3. Calculate Revenue
-    const validOrders = ordersToUse.filter(o => o.status !== "Cancelled");
+    const validOrders = ordersToUse.filter(o => o.status !== "Cancelled" && o.paymentId && o.paymentId.trim() !== "");
     const validRequests = serviceRequests.filter(r => r.status !== "cancelled");
 
     const ordersRevenue = validOrders.reduce((sum, o) => sum + (o.price || 0), 0);
