@@ -44,6 +44,25 @@ export const createMembershipApplication = async (req, res) => {
     });
 
     if (existingMember) {
+      if (req.body.status === "active") {
+        existingMember.status = "active";
+        existingMember.plan = plan;
+        if (req.body.notes) {
+          existingMember.notes = req.body.notes;
+        }
+        await existingMember.activateSubscription();
+        return res.status(200).json({
+          success: true,
+          message: "Your subscription is now active! Welcome to the sacred community.",
+          data: {
+            id: existingMember._id,
+            name: existingMember.name,
+            email: existingMember.email,
+            plan: existingMember.plan,
+            status: existingMember.status,
+          },
+        });
+      }
       return res.status(400).json({
         success: false,
         message:

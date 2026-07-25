@@ -1,4 +1,5 @@
 import Contact from "../models/contact.js";
+import { sendEmail } from "../utils/sendEmauils.js";
 
 // @desc    Create new contact
 // @route   POST /api/contact
@@ -24,6 +25,20 @@ export const createContact = async (req, res) => {
       userId: userId || null,
       status: "pending",
     });
+
+    // Send email to contact recipient
+    try {
+      const recipientEmail = process.env.MSG91_FROM_EMAIL || "contact@osheenoracle.com";
+      await sendEmail({
+        email: recipientEmail,
+        name: "Osheen Oracle Support",
+        subject: `New Contact Inquiry from ${name}`,
+        message: `You have received a new inquiry on the Contact Us form:\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}`,
+      });
+      console.log(`Contact inquiry notification email sent to ${recipientEmail}`);
+    } catch (emailErr) {
+      console.error("Error sending contact notification email:", emailErr.message);
+    }
 
     res.status(201).json({
       success: true,
