@@ -243,7 +243,6 @@ export const getAllApplications = async (req, res) => {
       },
       stats: stats[0] || { total: 0, pending: 0, active: 0, cancelled: 0 },
     });
-    });
   } catch (error) {
     res.status(500).json({
       success: false,
