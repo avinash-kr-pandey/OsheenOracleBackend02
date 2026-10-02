@@ -51,6 +51,14 @@ const becomeAMemberSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  amountPaid: {
+    type: Number,
+    default: 0,
+  },
+  paymentId: {
+    type: String,
+    trim: true,
+  },
   contactHistory: [
     {
       date: {

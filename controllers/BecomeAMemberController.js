@@ -35,6 +35,22 @@ export const createMembershipApplication = async (req, res) => {
         message:
           "Invalid plan selected. Please choose a valid membership plan.",
       });
+    }    // Helper to parse numeric price
+    const parsePrice = (priceStr) => {
+      if (!priceStr) return 0;
+      const digits = String(priceStr).replace(/[^0-9]/g, "");
+      return parseInt(digits, 10) || 0;
+    };
+
+    let calculatedAmount = req.body.amountPaid || 0;
+    if (!calculatedAmount && req.body.notes) {
+      const match = req.body.notes.match(/Total Paid:\s*₹?\s*([\d,]+)/i);
+      if (match) {
+        calculatedAmount = parsePrice(match[1]);
+      }
+    }
+    if (!calculatedAmount && existingPlan) {
+      calculatedAmount = parsePrice(existingPlan.price);
     }
 
     // 📧 Check duplicate email
@@ -47,6 +63,8 @@ export const createMembershipApplication = async (req, res) => {
       if (req.body.status === "active") {
         existingMember.status = "active";
         existingMember.plan = plan;
+        if (calculatedAmount) existingMember.amountPaid = calculatedAmount;
+        if (req.body.paymentId) existingMember.paymentId = req.body.paymentId;
         if (req.body.notes) {
           existingMember.notes = req.body.notes;
         }
@@ -60,6 +78,7 @@ export const createMembershipApplication = async (req, res) => {
             email: existingMember.email,
             plan: existingMember.plan,
             status: existingMember.status,
+            amountPaid: existingMember.amountPaid,
           },
         });
       }
@@ -77,6 +96,8 @@ export const createMembershipApplication = async (req, res) => {
       phone,
       countryCode,
       plan,
+      amountPaid: calculatedAmount,
+      paymentId: req.body.paymentId || "",
       newsletter: newsletter !== undefined ? newsletter : true,
     });
 
@@ -102,6 +123,7 @@ export const createMembershipApplication = async (req, res) => {
         email: application.email,
         plan: application.plan,
         status: application.status,
+        amountPaid: application.amountPaid,
       },
     });
   } catch (error) {
@@ -119,6 +141,7 @@ export const createMembershipApplication = async (req, res) => {
     });
   }
 };
+
 // @desc    Get all membership applications (Admin)
 // @route   GET /api/membership/admin/applications
 // @access  Private/Admin
@@ -130,8 +153,9 @@ export const getAllApplications = async (req, res) => {
       startDate,
       endDate,
       page = 1,
-      limit = 10,
+      limit = 20,
       search,
+      expiringSoon,
     } = req.query;
 
     let filter = {};
@@ -159,6 +183,40 @@ export const getAllApplications = async (req, res) => {
       .select("-__v");
 
     const total = await BecomeAMember.countDocuments(filter);
+    const plans = await MembershipPlan.find({});
+
+    const enrichedApplications = applications.map((app) => {
+      const appObj = app.toObject();
+      let daysRemaining = null;
+      let isExpiringSoon = false;
+
+      if (appObj.subscriptionEndDate) {
+        const diff = new Date(appObj.subscriptionEndDate) - new Date();
+        daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+        if (daysRemaining <= 5 && daysRemaining > 0 && appObj.status === "active") {
+          isExpiringSoon = true;
+        }
+      }
+
+      const matchedPlan = plans.find(
+        (p) =>
+          String(p._id) === String(appObj.plan) ||
+          p.id === String(appObj.plan)
+      );
+
+      return {
+        ...appObj,
+        planName: matchedPlan ? matchedPlan.name : appObj.plan,
+        planPrice: matchedPlan ? matchedPlan.price : "",
+        daysRemaining,
+        isExpiringSoon,
+      };
+    });
+
+    // If expiringSoon query filter is passed
+    const finalData = expiringSoon === "true" 
+      ? enrichedApplications.filter(a => a.isExpiringSoon)
+      : enrichedApplications;
 
     const stats = await BecomeAMember.aggregate([
       {
@@ -176,7 +234,7 @@ export const getAllApplications = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: applications,
+      data: finalData,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -184,6 +242,7 @@ export const getAllApplications = async (req, res) => {
         pages: Math.ceil(total / parseInt(limit)),
       },
       stats: stats[0] || { total: 0, pending: 0, active: 0, cancelled: 0 },
+    });
     });
   } catch (error) {
     res.status(500).json({
@@ -967,7 +1026,12 @@ export const getMyMembership = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: application,
+      data: application ? {
+        ...application.toObject(),
+        planName: (plans.find(p => String(p._id) === String(application.plan) || p.id === String(application.plan)) || {}).name || application.plan,
+        daysRemaining: application.subscriptionEndDate ? Math.max(0, Math.ceil((new Date(application.subscriptionEndDate) - new Date()) / (1000 * 60 * 60 * 24))) : null,
+        isExpiringSoon: Boolean(application.subscriptionEndDate && Math.ceil((new Date(application.subscriptionEndDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 5 && Math.ceil((new Date(application.subscriptionEndDate) - new Date()) / (1000 * 60 * 60 * 24)) > 0 && application.status === "active")
+      } : null,
       plans: plans
     });
   } catch (error) {
