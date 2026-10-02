@@ -952,9 +952,16 @@ export const getMyMembership = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized. Email not found in request." });
     }
 
-    const application = await BecomeAMember.findOne({
-      email: req.user.email.toLowerCase()
+    let application = await BecomeAMember.findOne({
+      email: req.user.email.toLowerCase(),
+      status: "active"
     }).sort({ createdAt: -1 });
+
+    if (!application) {
+      application = await BecomeAMember.findOne({
+        email: req.user.email.toLowerCase()
+      }).sort({ createdAt: -1 });
+    }
 
     const plans = await MembershipPlan.find({ isActive: true });
 
